@@ -146,8 +146,10 @@ fn main() {
     let universe = generate_universe(prop_set.clone());
     let mut formula: ModalFormula = build_formula("box a").unwrap();
     let pointed_set = generate_all_poss_pointed_set(&universe);
-    let set1 = &pointed_set.get(8).unwrap().set;
-    let set2 = &pointed_set.get(1).unwrap().set;
-    // println!("NAME = {:?}", c);
+    let world = "a".to_string();
+    let order = create_order_worlds(&universe, &world);
+    println!("universe = {:?}", universe);
+    println!("world = {:?}", world);
+    println!("order = {:?}", order);
 
 }

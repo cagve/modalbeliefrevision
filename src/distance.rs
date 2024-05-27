@@ -2,7 +2,33 @@ use std::{cmp::Ordering, collections::HashSet};
 
 
 #[derive(Debug)]
-struct WorldDistance {
+struct ModelDistance {
+    world: Vec<String>,
+    distance: usize,
+}
+
+impl PartialEq for ModelDistance {
+    fn eq(&self, other: &Self) -> bool {
+        self.distance == other.distance
+    }
+}
+
+impl Eq for ModelDistance {}
+
+impl PartialOrd for ModelDistance {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for ModelDistance {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.distance.cmp(&other.distance)
+    }
+}
+
+#[derive(Debug)]
+pub struct WorldDistance {
     world: String,
     distance: usize,
 }
@@ -27,8 +53,41 @@ impl Ord for WorldDistance {
     }
 }
 
+pub fn create_order_worlds(set: &Vec<String>, world:&String) -> Vec<WorldDistance>{
+    let mut distances: Vec<WorldDistance> = set.iter()
+        .map(|s| WorldDistance {
+            world: s.clone(),
+            distance: hamming_distance(&s, world),
+        })
+    .collect();
+    distances.sort();
+    return distances;
+}
 
 
+fn closest_model(set_of_set_points: &Vec<Vec<String>>, points: &Vec<String>) -> Vec<String>{
+    let mut distances: Vec<ModelDistance> = set_of_set_points.iter()
+        .map(|s| ModelDistance {
+            world: s.clone(),
+            distance: distance_set_set(&s, points),
+        })
+    .collect();
+    distances.sort();
+    let closest_model = distances.first().unwrap().world.clone();
+    return closest_model;
+}
+
+fn distance_sets_set(set_of_points: &Vec<Vec<String>>, points: &Vec<String>) -> usize{
+    let mut distances: Vec<ModelDistance> = set_of_points.iter()
+        .map(|s| ModelDistance {
+            world: s.clone(),
+            distance: distance_set_set(&s, points),
+        })
+    .collect();
+    distances.sort();
+    let closest_model = distances.first().unwrap().world.clone();
+    return distance_set_set(&closest_model, points);
+}
 
 fn closest_point(points: &Vec<String>, point: &str) -> String {
     let mut distances: Vec<WorldDistance> = points.iter()
