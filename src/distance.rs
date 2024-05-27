@@ -1,124 +1,70 @@
 use std::{cmp::Ordering, collections::HashSet};
 
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 struct ModelDistance {
-    world: Vec<String>,
+    model: Vec<String>,
     distance: usize,
 }
 
-impl PartialEq for ModelDistance {
-    fn eq(&self, other: &Self) -> bool {
-        self.distance == other.distance
-    }
-}
-
-impl Eq for ModelDistance {}
-
-impl PartialOrd for ModelDistance {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for ModelDistance {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.distance.cmp(&other.distance)
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct WorldDistance {
     world: String,
     distance: usize,
 }
 
-impl PartialEq for WorldDistance {
-    fn eq(&self, other: &Self) -> bool {
-        self.distance == other.distance
-    }
-}
-
-impl Eq for WorldDistance {}
-
-impl PartialOrd for WorldDistance {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for WorldDistance {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.distance.cmp(&other.distance)
-    }
-}
-
-pub fn create_order_worlds(set: &Vec<String>, world:&String) -> Vec<WorldDistance>{
-    let mut distances: Vec<WorldDistance> = set.iter()
+pub fn create_order_worlds(set: &Vec<String>, world:&str) -> Vec<WorldDistance>{
+    let mut order: Vec<WorldDistance> = set.iter()
         .map(|s| WorldDistance {
             world: s.clone(),
             distance: hamming_distance(&s, world),
         })
     .collect();
-    distances.sort();
-    return distances;
+    order.sort();
+    return order;
 }
 
-
-fn closest_model(set_of_set_points: &Vec<Vec<String>>, points: &Vec<String>) -> Vec<String>{
-    let mut distances: Vec<ModelDistance> = set_of_set_points.iter()
+// Given a set of sets, and a set, return the order.
+pub fn create_order_models(set_of_set_of_worlds: &Vec<Vec<String>>, set_of_worlds: &Vec<String>) -> Vec<ModelDistance>{
+    let mut order: Vec<ModelDistance> = set_of_set_of_worlds.iter()
         .map(|s| ModelDistance {
-            world: s.clone(),
-            distance: distance_set_set(&s, points),
+            model: s.clone(),
+            distance: distance_set_to_set(&s, set_of_worlds),
         })
     .collect();
-    distances.sort();
-    let closest_model = distances.first().unwrap().world.clone();
+    order.sort();
+    return order;
+}
+
+fn closest_model(set_of_set_of_worlds: &Vec<Vec<String>>, set_of_worlds: &Vec<String>) -> Vec<String>{
+    let order = create_order_models(set_of_set_of_worlds, set_of_worlds);
+    let closest_model = order.first().unwrap().model.clone();
     return closest_model;
 }
 
-fn distance_sets_set(set_of_points: &Vec<Vec<String>>, points: &Vec<String>) -> usize{
-    let mut distances: Vec<ModelDistance> = set_of_points.iter()
-        .map(|s| ModelDistance {
-            world: s.clone(),
-            distance: distance_set_set(&s, points),
-        })
-    .collect();
-    distances.sort();
-    let closest_model = distances.first().unwrap().world.clone();
-    return distance_set_set(&closest_model, points);
+fn distance_sets_to_set(set_of_set_of_worlds: &Vec<Vec<String>>, set_of_worlds: &Vec<String>) -> usize{
+    let order = create_order_models(set_of_set_of_worlds, set_of_worlds);
+    let closest_model = order.first().unwrap().model.clone();
+    return distance_set_to_set(&closest_model, set_of_worlds);
 }
 
-fn closest_point(points: &Vec<String>, point: &str) -> String {
-    let mut distances: Vec<WorldDistance> = points.iter()
-        .map(|s| WorldDistance {
-            world: s.clone(),
-            distance: hamming_distance(s, point),
-        })
-        .collect();
-
-    distances.sort();
-    let closest_point = distances.first().unwrap().world.clone();
-    return closest_point;
+// Given a set of world and a world, return the closest world
+fn closest_world(points: &Vec<String>, world: &str) -> String {
+    let order = create_order_worlds(points, world);
+    let closest_world = order.first().unwrap().world.clone();
+    return closest_world;
 }
 
-pub fn distance_set_point(points: &Vec<String>, point: &str) -> usize {
-    let mut distances: Vec<WorldDistance> = points.iter()
-        .map(|s| WorldDistance {
-            world: s.clone(),
-            distance: hamming_distance(s, point),
-        })
-        .collect();
-
-    distances.sort();
-    let closest_point = distances.first().unwrap().world.clone();
-    return hamming_distance(&closest_point, point);
+// Given a set of world and a world, return the distance to the closest point
+pub fn distance_set_to_world(set_of_worlds: &Vec<String>, world: &str) -> usize {
+    let closest_world = closest_world(set_of_worlds, world);
+    return hamming_distance(&closest_world, world);
 }
 
-pub fn distance_set_set(set1: &Vec<String>, set2: &Vec<String>)-> usize{
+pub fn distance_set_to_set(set1: &Vec<String>, set2: &Vec<String>)-> usize{
     let mut d = 0;
-    set1.iter().for_each(|ele| d = d+distance_set_point(set2, ele));
-    set2.iter().for_each(|ele| d = d+distance_set_point(set1, ele));
+    set1.iter().for_each(|ele| d = d+distance_set_to_world(set2, ele));
+    set2.iter().for_each(|ele| d = d+distance_set_to_world(set1, ele));
     return d;
 }
 
@@ -145,7 +91,7 @@ pub fn test() {
     ];
     let target = "apricot";
 
-    let closest = distance_set_point(&points, target);
+    let closest = distance_set_to_world(&points, target);
     println!("The closest point to {} is {}", target, closest);
 }
 
