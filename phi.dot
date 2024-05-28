@@ -1,0 +1,135 @@
+digraph G {
+label="◊b"rankdir=LR
+splines=ortho
+node [width=0.5, height=0.5, fixedsize=true]
+  subgraph cluster_0 { 
+label="Model 0"     node_0 [label="b", shape=doublecircle]
+  }
+ subgraph cluster_1 { 
+label="Model 1"     node_1 [label="ab", shape=doublecircle]
+  }
+ subgraph cluster_2 { 
+label="Model 2"     node_2 [label="a", shape=doublecircle]
+     node_3 [label="b", shape=circle]
+  }
+ subgraph cluster_3 { 
+label="Model 3"     node_4 [label="a", shape=circle]
+     node_5 [label="b", shape=doublecircle]
+  }
+ subgraph cluster_4 { 
+label="Model 4"     node_6 [label="a", shape=doublecircle]
+     node_7 [label="ab", shape=circle]
+  }
+ subgraph cluster_5 { 
+label="Model 5"     node_8 [label="a", shape=circle]
+     node_9 [label="ab", shape=doublecircle]
+  }
+ subgraph cluster_6 { 
+label="Model 6"     node_10 [label="b", shape=doublecircle]
+     node_11 [label="ab", shape=circle]
+  }
+ subgraph cluster_7 { 
+label="Model 7"     node_12 [label="b", shape=circle]
+     node_13 [label="ab", shape=doublecircle]
+  }
+ subgraph cluster_8 { 
+label="Model 8"     node_14 [label="b", shape=doublecircle]
+     node_15 [label="", shape=circle]
+  }
+ subgraph cluster_9 { 
+label="Model 9"     node_16 [label="b", shape=circle]
+     node_17 [label="", shape=doublecircle]
+  }
+ subgraph cluster_10 { 
+label="Model 10"     node_18 [label="ab", shape=doublecircle]
+     node_19 [label="", shape=circle]
+  }
+ subgraph cluster_11 { 
+label="Model 11"     node_20 [label="ab", shape=circle]
+     node_21 [label="", shape=doublecircle]
+  }
+ subgraph cluster_12 { 
+label="Model 12"     node_22 [label="a", shape=doublecircle]
+     node_23 [label="b", shape=circle]
+     node_24 [label="ab", shape=circle]
+  }
+ subgraph cluster_13 { 
+label="Model 13"     node_25 [label="a", shape=circle]
+     node_26 [label="b", shape=doublecircle]
+     node_27 [label="ab", shape=circle]
+  }
+ subgraph cluster_14 { 
+label="Model 14"     node_28 [label="a", shape=circle]
+     node_29 [label="b", shape=circle]
+     node_30 [label="ab", shape=doublecircle]
+  }
+ subgraph cluster_15 { 
+label="Model 15"     node_31 [label="a", shape=doublecircle]
+     node_32 [label="b", shape=circle]
+     node_33 [label="", shape=circle]
+  }
+ subgraph cluster_16 { 
+label="Model 16"     node_34 [label="a", shape=circle]
+     node_35 [label="b", shape=doublecircle]
+     node_36 [label="", shape=circle]
+  }
+ subgraph cluster_17 { 
+label="Model 17"     node_37 [label="a", shape=circle]
+     node_38 [label="b", shape=circle]
+     node_39 [label="", shape=doublecircle]
+  }
+ subgraph cluster_18 { 
+label="Model 18"     node_40 [label="a", shape=doublecircle]
+     node_41 [label="ab", shape=circle]
+     node_42 [label="", shape=circle]
+  }
+ subgraph cluster_19 { 
+label="Model 19"     node_43 [label="a", shape=circle]
+     node_44 [label="ab", shape=doublecircle]
+     node_45 [label="", shape=circle]
+  }
+ subgraph cluster_20 { 
+label="Model 20"     node_46 [label="a", shape=circle]
+     node_47 [label="ab", shape=circle]
+     node_48 [label="", shape=doublecircle]
+  }
+ subgraph cluster_21 { 
+label="Model 21"     node_49 [label="b", shape=doublecircle]
+     node_50 [label="ab", shape=circle]
+     node_51 [label="", shape=circle]
+  }
+ subgraph cluster_22 { 
+label="Model 22"     node_52 [label="b", shape=circle]
+     node_53 [label="ab", shape=doublecircle]
+     node_54 [label="", shape=circle]
+  }
+ subgraph cluster_23 { 
+label="Model 23"     node_55 [label="b", shape=circle]
+     node_56 [label="ab", shape=circle]
+     node_57 [label="", shape=doublecircle]
+  }
+ subgraph cluster_24 { 
+label="Model 24"     node_58 [label="a", shape=doublecircle]
+     node_59 [label="b", shape=circle]
+     node_60 [label="ab", shape=circle]
+     node_61 [label="", shape=circle]
+  }
+ subgraph cluster_25 { 
+label="Model 25"     node_62 [label="a", shape=circle]
+     node_63 [label="b", shape=doublecircle]
+     node_64 [label="ab", shape=circle]
+     node_65 [label="", shape=circle]
+  }
+ subgraph cluster_26 { 
+label="Model 26"     node_66 [label="a", shape=circle]
+     node_67 [label="b", shape=circle]
+     node_68 [label="ab", shape=doublecircle]
+     node_69 [label="", shape=circle]
+  }
+ subgraph cluster_27 { 
+label="Model 27"     node_70 [label="a", shape=circle]
+     node_71 [label="b", shape=circle]
+     node_72 [label="ab", shape=circle]
+     node_73 [label="", shape=doublecircle]
+  }
+}

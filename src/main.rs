@@ -32,7 +32,4 @@ fn main() {
 
     let revision = Revision::new(f1,f2,universe);
     print!("{:?}", revision.output);
-    revision.render("phi");
-    revision.render("mu");
-    revision.render("revision");
 }

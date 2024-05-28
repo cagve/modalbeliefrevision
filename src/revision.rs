@@ -54,31 +54,36 @@ impl Revision {
 
     pub fn render(&self, id: &str){
         let mut set = Vec::new();
-        let mut title = "";
+        let mut dot_content = String::new();
+        dot_content.push_str("digraph G {\n");
         match id {
             "phi" => {
                 set = self.base_set.clone();
                 let title = self.phi.to_string();
+                dot_content.push_str(&format!("label=\"{}\"", title));
             },
             "mu" => {
                 set = self.input_set.clone();
                 let title = &self.mu.to_string();
+                dot_content.push_str(&format!("label=\"{}\"", title));
             },
             "revision" => {
                 set = self.output.clone();
                 let title = "Result";
+                dot_content.push_str(&format!("label=\"{}\"", title));
             },
-            _ => {}
+            _ => { }
         };
-        let mut dot_content = String::new();
-        dot_content.push_str("digraph G {\n");
-        dot_content.push_str(&format!("label=\"{}\"",title));
+        
+        dot_content.push_str("rankdir=LR\n");
+        dot_content.push_str("splines=ortho\n");
         dot_content.push_str("node [width=0.5, height=0.5, fixedsize=true]\n ");
 
         let mut cluster_id = 0;
         let mut node_id = 0;
         for pointed in set {
             dot_content.push_str(&format!(" subgraph cluster_{} {{ \n",cluster_id));
+                dot_content.push_str(&format!("label=\"Model {}\"", cluster_id));
             let model = pointed.model.clone();
             for node in model {
                 if node.clone() == pointed.world {
@@ -96,4 +101,5 @@ impl Revision {
         let mut file = File::create(id.to_string()+".dot").expect("Unable to create file");
         file.write_all(dot_content.as_bytes());
     }
+
 }

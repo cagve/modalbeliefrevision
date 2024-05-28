@@ -1,0 +1,19 @@
+digraph G {
+label="Result"rankdir=LR
+splines=ortho
+node [width=0.5, height=0.5, fixedsize=true]
+  subgraph cluster_0 { 
+label="Model 0"     node_0 [label="b", shape=doublecircle]
+  }
+ subgraph cluster_1 { 
+label="Model 1"     node_1 [label="ab", shape=doublecircle]
+  }
+ subgraph cluster_2 { 
+label="Model 2"     node_2 [label="b", shape=doublecircle]
+     node_3 [label="ab", shape=circle]
+  }
+ subgraph cluster_3 { 
+label="Model 3"     node_4 [label="b", shape=circle]
+     node_5 [label="ab", shape=doublecircle]
+  }
+}
