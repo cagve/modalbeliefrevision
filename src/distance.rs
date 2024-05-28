@@ -1,16 +1,78 @@
-use std::{cmp::Ordering, collections::HashSet};
+use std::{cmp::Ordering, collections::HashSet, fmt};
+use crate::semantic::S5PointedModel;
 
+
+#[derive(Debug)]
+pub struct Lexicographic{
+    pub distance_model: usize,
+    pub distance_world: usize
+}
+
+impl fmt::Display for Lexicographic {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "<{},{}>", self.distance_model, self.distance_world)
+    }
+}
+
+impl PartialEq for Lexicographic {
+    fn eq(&self, other: &Self) -> bool {
+        self.distance_model == other.distance_model && self.distance_world == other.distance_world
+    }
+}
+
+impl Eq for Lexicographic {}
+
+impl PartialOrd for Lexicographic {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Lexicographic {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self.distance_model.cmp(&other.distance_model) {
+            Ordering::Equal => self.distance_world.cmp(&other.distance_world),
+            other => other,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct PointedModelDistance {
+    pub distance: Lexicographic,
+    pub pointed_model: S5PointedModel,
+}
+
+impl PartialEq for PointedModelDistance {
+    fn eq(&self, other: &Self) -> bool {
+        self.distance == other.distance
+    }
+}
+
+impl Eq for PointedModelDistance {}
+
+impl PartialOrd for PointedModelDistance {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for PointedModelDistance {
+    fn cmp(&self, other: &Self) -> Ordering {
+        return self.distance.cmp(&other.distance);
+    }
+}
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-struct ModelDistance {
-    model: Vec<String>,
+pub struct ModelDistance {
     distance: usize,
+    model: Vec<String>,
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct WorldDistance {
-    world: String,
     distance: usize,
+    world: String,
 }
 
 pub fn create_order_worlds(set: &Vec<String>, world:&str) -> Vec<WorldDistance>{
@@ -22,6 +84,41 @@ pub fn create_order_worlds(set: &Vec<String>, world:&str) -> Vec<WorldDistance>{
     .collect();
     order.sort();
     return order;
+}
+
+pub fn create_order_pointed(set: &Vec<S5PointedModel>, reference: &S5PointedModel) -> Vec<PointedModelDistance>{
+    let mut order: Vec<PointedModelDistance> = set.iter()
+        .map(|s|{
+            let r = reference;
+            let p = PointedModelDistance {
+                pointed_model: s.clone(),
+                distance: distance_pointed_to_pointed(s, r)
+            };
+            return p;
+        })
+    .collect();
+    order.sort();
+    return order;
+}
+
+pub fn closest_pointed(set: &Vec<S5PointedModel>, reference: &S5PointedModel) -> S5PointedModel {
+    let order = create_order_pointed(set, reference);
+    let closest_pointed = order.first().unwrap().pointed_model.clone();
+    return closest_pointed;
+}
+
+pub fn distance_to_closest(set: &Vec<S5PointedModel>, reference: &S5PointedModel) -> Lexicographic{
+    let closest_pointed = closest_pointed(set, reference);
+    return distance_pointed_to_pointed(&closest_pointed, reference);
+}
+
+pub fn get_set_of_closest_pointed_model(set: &Vec<S5PointedModel>, reference: &S5PointedModel) -> Vec<S5PointedModel> {
+    let d = distance_to_closest(set, reference);
+    let result = set.iter()
+        .filter(|x| distance_pointed_to_pointed(x,reference) == d)
+        .map(|y| y.clone())
+        .collect();
+    return result;
 }
 
 // Given a set of sets, and a set, return the order.
@@ -43,8 +140,7 @@ fn closest_model(set_of_set_of_worlds: &Vec<Vec<String>>, set_of_worlds: &Vec<St
 }
 
 fn distance_sets_to_set(set_of_set_of_worlds: &Vec<Vec<String>>, set_of_worlds: &Vec<String>) -> usize{
-    let order = create_order_models(set_of_set_of_worlds, set_of_worlds);
-    let closest_model = order.first().unwrap().model.clone();
+    let closest_model = closest_model(set_of_set_of_worlds, set_of_worlds);
     return distance_set_to_set(&closest_model, set_of_worlds);
 }
 
@@ -82,16 +178,42 @@ pub fn hamming_distance(s1: &str, s2: &str) -> usize {
     return result;
 }
 
+pub fn distance_pointed_to_pointed(pointed1: &S5PointedModel, pointed2: &S5PointedModel) -> Lexicographic{
+    let m1 =  pointed1.clone().model;
+    let w1 =  pointed1.clone().world;
+    let m2 =  pointed2.clone().model;
+    let w2 =  pointed2.clone().world;
 
-pub fn test() {
-    let points = vec![
-        String::from("apple"),
-        String::from("banana"),
-        String::from("cherry"),
-    ];
-    let target = "apricot";
+    let distance_model = distance_set_to_set(&m1, &m2);
+    let distance_world = hamming_distance(&w1, &w2);
+    let lexi = Lexicographic {distance_model, distance_world};
+    return lexi
+}
 
-    let closest = distance_set_to_world(&points, target);
-    println!("The closest point to {} is {}", target, closest);
+
+// Given two sets, returns the set of the closest set to s1. 
+pub fn get_revision_models(base: &Vec<S5PointedModel>, input: &Vec<S5PointedModel>) -> Vec<S5PointedModel> {
+    let mut min_d = Lexicographic {distance_model : 99999999, distance_world : 999999999};
+    let r:Vec<S5PointedModel> = input.clone();
+    r.clone().iter()
+        .for_each(|p1| {
+            let d = distance_to_closest(base, p1);
+            if d < min_d {
+                min_d = d;
+            }
+        });
+    
+    let mut result  = r.iter()
+        .filter(|x| distance_to_closest(base,x) == min_d)
+        .map(|x| x.clone())
+        .collect::<Vec<S5PointedModel>>();
+
+    // REMOVE DUPLICATES. vvvvvvvvvvvvvvvvvvvvvvv
+    let mut seen = HashSet::new();
+    result.retain(|item| seen.insert(item.clone()));
+    // REMOVE DUPLCIATES ^^^^^^^^^^^^^^^^^^^^^^^^
+    
+    return result;
+        
 }
 
