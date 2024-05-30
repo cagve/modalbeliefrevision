@@ -12,7 +12,8 @@ pub struct Revision {
     pub universe:Vec<String>,
     pub base_set: Vec<S5PointedModel>,
     pub input_set: Vec<S5PointedModel>,
-    pub output:Vec<S5PointedModel>
+    pub output:Vec<S5PointedModel>,
+    pub distance:Lexicographic
 }
 
 
@@ -22,6 +23,7 @@ impl Revision {
         let base_set = get_models(phi.clone(), universe.clone());
         let input_set = get_models(mu.clone(), universe.clone());
         let output = get_revision_models(&base_set, &input_set);
+        let distance = distance_to_closest(&base_set, output.get(0).unwrap());
 
         Self {
             phi,
@@ -30,9 +32,18 @@ impl Revision {
             base_set,
             input_set,
             output,
+            distance,
         }
     }
+    
+    pub fn _to_string(&self) -> String{
+        let s = format!("{} * {}", self.phi, self.mu); 
+        return s;
+    }
 
+    pub fn beauty_distance(&self) -> String{
+        return format!("{} * {} = {} ", self.phi, self.mu, self.distance.to_string());
+    }
     pub fn beauty(&self ) {
         println!("{} * {} = ", self.phi, self.mu);
         self.output.iter().for_each(|x| {
@@ -52,54 +63,5 @@ impl Revision {
         })
     }
 
-    pub fn render(&self, id: &str){
-        let mut set = Vec::new();
-        let mut dot_content = String::new();
-        dot_content.push_str("digraph G {\n");
-        match id {
-            "phi" => {
-                set = self.base_set.clone();
-                let title = self.phi.to_string();
-                dot_content.push_str(&format!("label=\"{}\"", title));
-            },
-            "mu" => {
-                set = self.input_set.clone();
-                let title = &self.mu.to_string();
-                dot_content.push_str(&format!("label=\"{}\"", title));
-            },
-            "revision" => {
-                set = self.output.clone();
-                let title = "Result";
-                dot_content.push_str(&format!("label=\"{}\"", title));
-            },
-            _ => { }
-        };
-        
-        dot_content.push_str("rankdir=LR\n");
-        dot_content.push_str("splines=ortho\n");
-        dot_content.push_str("node [width=0.5, height=0.5, fixedsize=true]\n ");
-
-        let mut cluster_id = 0;
-        let mut node_id = 0;
-        for pointed in set {
-            dot_content.push_str(&format!(" subgraph cluster_{} {{ \n",cluster_id));
-                dot_content.push_str(&format!("label=\"Model {}\"", cluster_id));
-            let model = pointed.model.clone();
-            for node in model {
-                if node.clone() == pointed.world {
-                    dot_content.push_str(&format!("     node_{} [label=\"{}\", shape=doublecircle]\n", node_id, node));
-                }else{
-                    dot_content.push_str(&format!("     node_{} [label=\"{}\", shape=circle]\n", node_id, node));
-                }
-                node_id = node_id + 1;
-            }
-            dot_content.push_str("  }\n");
-            cluster_id = cluster_id + 1;
-        }
-        dot_content.push_str("}\n");
-
-        let mut file = File::create(id.to_string()+".dot").expect("Unable to create file");
-        file.write_all(dot_content.as_bytes());
-    }
 
 }

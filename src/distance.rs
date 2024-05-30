@@ -217,3 +217,14 @@ pub fn get_revision_models(base: &Vec<S5PointedModel>, input: &Vec<S5PointedMode
         
 }
 
+pub fn get_base_closest_set(base: &Vec<S5PointedModel>, input: &Vec<S5PointedModel>) -> Vec<S5PointedModel>{
+    let mut result = Vec::new();
+    input.iter().for_each(|x| result.push(closest_pointed(base, x)));
+    // REMOVE DUPLICATES. vvvvvvvvvvvvvvvvvvvvvvv
+    let mut seen = HashSet::new();
+    result.retain(|item| seen.insert(item.clone()));
+    // REMOVE DUPLCIATES ^^^^^^^^^^^^^^^^^^^^^^^^
+    return result;
+    
+}
+

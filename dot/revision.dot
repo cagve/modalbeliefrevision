@@ -1,0 +1,72 @@
+digraph G {
+    label = "a * b"
+    node [width=0.5, height=0.5, fixedsize=true]
+    subgraph cluster_8 {
+        edge [style=invis]
+        label="a * b"
+        subgraph cluster_0 {
+        label="Model 0"
+        node_0 [label="ab", shape=doublecircle]
+ }
+        subgraph cluster_1 {
+        label="Model 1"
+        node_1 [label="a", shape=circle]
+node_2 [label="ab", shape=doublecircle]
+ }
+        subgraph cluster_2 {
+        label="Model 2"
+        node_3 [label="b", shape=circle]
+node_4 [label="ab", shape=doublecircle]
+ }
+        subgraph cluster_3 {
+        label="Model 3"
+        node_5 [label="ab", shape=doublecircle]
+node_6 [label="", shape=circle]
+ }
+        subgraph cluster_4 {
+        label="Model 4"
+        node_7 [label="a", shape=circle]
+node_8 [label="b", shape=circle]
+node_9 [label="ab", shape=doublecircle]
+ }
+        subgraph cluster_5 {
+        label="Model 5"
+        node_10 [label="a", shape=circle]
+node_11 [label="ab", shape=doublecircle]
+node_12 [label="", shape=circle]
+ }
+        subgraph cluster_6 {
+        label="Model 6"
+        node_13 [label="b", shape=circle]
+node_14 [label="ab", shape=doublecircle]
+node_15 [label="", shape=circle]
+ }
+        subgraph cluster_7 {
+        label="Model 7"
+        node_16 [label="a", shape=circle]
+node_17 [label="b", shape=circle]
+node_18 [label="ab", shape=doublecircle]
+node_19 [label="", shape=circle]
+ }
+        node_0->node_1
+node_1->node_2
+node_2->node_3
+node_3->node_4
+node_4->node_5
+node_5->node_6
+node_6->node_7
+node_7->node_8
+node_8->node_9
+node_9->node_10
+node_10->node_11
+node_11->node_12
+node_12->node_13
+node_13->node_14
+node_14->node_15
+node_15->node_16
+node_16->node_17
+node_17->node_18
+node_18->node_19
+ }
+        
+}

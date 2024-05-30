@@ -1,0 +1,106 @@
+use std::fmt::format;
+use std::fs::File;
+use std::io::Write;
+
+use crate::revision::Revision;
+use crate::semantic::S5PointedModel;
+
+
+
+pub fn write_dot(file:&str, dot_content:&str){
+    let mut file = File::create(file).expect("Unable to create file");
+    file.write_all(dot_content.as_bytes()).expect("Unable to write file");
+}
+
+pub fn dot_model(pointed: &S5PointedModel, id: usize, world_id:usize) -> String{
+    let mut world_content = String::new();
+    let m = &pointed.model;
+    let mut counter = world_id;
+    m.iter()
+        .for_each(|w| {
+            if w.clone() == pointed.world {
+                world_content.push_str(&format!("node_{} [label=\"{}\", shape=doublecircle]\n", counter, w));
+            }else{
+                world_content.push_str(&format!("node_{} [label=\"{}\", shape=circle]\n", counter, w));
+            }
+            counter = counter + 1;
+        });
+
+    let dot=&format!("subgraph cluster_{} {{
+        label=\"Model {}\"
+        {} }}
+        ", id, id, world_content);
+    return dot.to_string();
+}
+
+pub fn dot_models(title:&str, models:&Vec<S5PointedModel>) -> String{
+    let mut dot_content = String::new();
+    let mut id = 0;
+    let mut counter = 0;
+    models.iter()
+        .for_each(|model|{
+            let dot_model = dot_model(model, id, counter);
+            counter = counter + model.model.len();
+            dot_content.push_str(&dot_model);
+            id = id+1;
+        });
+
+    for n in 0..counter-1{
+        dot_content.push_str(&format!("node_{}->node_{}\n",n,n+1));
+    }
+    let dot=&format!("subgraph cluster_{} {{
+        edge [style=invis]
+        label=\"{}\"
+        {} }}
+        ", id, title, dot_content);
+    return dot.to_string();
+}
+
+pub fn dot_debug_output(revision:Revision){
+    let mut dot_content = String::new();
+    dot_content.push_str(&dot_models(&revision.mu.to_string(), &revision.output));
+}
+
+
+pub fn render_dot(title: &str, dot_content:&str) -> String{
+    let dot=&format!("digraph G {{
+    label = {}
+    node [width=0.5, height=0.5, fixedsize=true]
+    {}
+}}",title,dot_content);
+
+    return dot.to_string()
+}
+
+pub fn render(revision:Revision, id:usize, file:&str) -> String{
+    let mut result = String::new();
+    match id {
+        0 => { // Base 
+            let title = revision.phi.to_string();
+            let dot_content = dot_models(&title, &revision.input_set);
+            result = render_dot(&title, &dot_content);
+        }
+        1 => { // Input
+            let title = revision.mu.to_string();
+            let dot_content = dot_models(&title, &revision.input_set);
+            result = render_dot(&title, &dot_content);
+        },
+        2 => { //Revision
+            let title = revision._to_string();
+            let dot_content = dot_models(&title, &revision.output);
+            result = render_dot(&title, &dot_content);
+        }
+        3=> { //Debug Revision
+            let title = revision._to_string();
+            let dot_content = dot_models(&title, &revision.output);
+            result = render_dot(&title, &dot_content);
+        }
+        _ => println!("Not expected")
+    }
+    write_dot(file, &result);
+    return result;
+}
+
+
+
+
