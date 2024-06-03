@@ -3,6 +3,7 @@ use crate::distance::*; //TODO refactor name
 use s5rust::modal::*;
 use crate::semantic::S5PointedModel;
 
+use std::error::Error;
 use std::fs::File;
 use std::io::Write;
 
@@ -44,11 +45,31 @@ impl Revision {
     pub fn beauty_distance(&self) -> String{
         return format!("{} * {} = {} ", self.phi, self.mu, self.distance.to_string());
     }
-    pub fn beauty(&self ) {
-        println!("{} * {} = ", self.phi, self.mu);
-        self.output.iter().for_each(|x| {
-            println!("| {}", x);
-        })
+
+    pub fn beauty(&self, comp: &str) {
+        match comp {
+            "formula"    => println!("{} * {}", self.phi, self.mu),
+            "output"    => {
+                println!("Output models: {}", self.output.len());
+                self.output.iter().for_each(|x| println!("{}", x))
+            },
+            "base_set"  => {
+                println!("Base models: {}", self.base_set.len());
+                self.base_set.iter().for_each(|x| println!("{}", x))
+            },
+            "input_set" => {
+                println!("Input models: {}", self.input_set.len());
+                self.input_set.iter().for_each(|x| println!("{}", x))
+            },
+            "debug"     => {
+                println!("{} * {} = ", self.phi, self.mu);
+                self.output.iter().for_each(|x| {
+                    println!("| {}", x);
+                })
+            },
+            _           => println!("Error") // TODO error managment
+        };
+
     }
 
     pub fn verbose(&self){

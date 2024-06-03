@@ -147,7 +147,7 @@ pub fn render(revision:&Revision, type_id:usize, file:&str) -> String{
             let dot_content = dot_debug_output(revision);
             result = render_dot(&d, &dot_content);
         }
-        4=> { //Debug own revision output
+        4=> { //Debug own revision
             let d = revision.beauty_distance();
             let dot_content = debug_output(revision);
             result = render_dot(&d, &dot_content);

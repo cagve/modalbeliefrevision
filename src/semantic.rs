@@ -37,7 +37,23 @@ impl S5PointedModel{
 
 impl fmt::Display for S5PointedModel {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "W: {:?}, w: {}", self.model, self.world)
+        let mut model_clone:Vec<String> = Vec::new();
+        let mut world_clone = String::new();
+        self.model.iter()
+            .for_each(|world| {
+                    if world == ""  {
+                        model_clone.push("∅".to_string());
+                    }else{
+                        model_clone.push(world.to_string());
+                    }
+                });
+
+        if self.world == ""  {
+            world_clone = "∅".to_string();
+        }else{
+            world_clone = self.world.clone();
+        }
+        write!(f, "W: {:?}, w: {}", model_clone, world_clone)
     }
 }
 
@@ -45,8 +61,8 @@ impl fmt::Display for S5PointedModel {
 pub fn generate_propset(n: usize) -> String {
     let mut prop_set: Vec<char> = Vec::with_capacity(n);
 
-    for i in 0..n {
-        prop_set.push((i as u8 + b'a') as char);
+    for i in 0..n { // start at p
+        prop_set.push((i as u8 + b'p') as char);
     } 
     
     let string: String = prop_set.into_iter().collect();
@@ -91,27 +107,27 @@ pub fn generate_all_poss_pointed_set(universe:&Vec<String>) -> Vec<S5PointedMode
 }
 
 
-pub fn check_pointed_model(formula: ModalFormula, m: &S5PointedModel) -> bool{
-    match formula.tree {
+pub fn check_pointed_model(formula: &ModalFormula, m: &S5PointedModel) -> bool{
+    match &formula.tree {
         Tree::Binary { conn, left, right } => {
             let term_left = build_formula(&left.to_string()).unwrap();
             let term_right = build_formula(&right.to_string()).unwrap();
             match conn {
                 Iff => {
                     // println!("Iff");
-                    return check_pointed_model(term_left, m) == check_pointed_model(term_right, m);
+                    return check_pointed_model(&term_left, m) == check_pointed_model(&term_right, m);
                 },
                 Implies => {
                     // println!("If");
-                    return !(check_pointed_model(term_left, m) && !check_pointed_model(term_right, m));
+                    return !(check_pointed_model(&term_left, m) && !check_pointed_model(&term_right, m));
                 },
                 And => {
                     // println!("And");
-                    return check_pointed_model(term_left, m) && check_pointed_model(term_right, m);
+                    return check_pointed_model(&term_left, m) && check_pointed_model(&term_right, m);
                 },
                 Or => {
                     // println!("Or");
-                    return check_pointed_model(term_left, m) || check_pointed_model(term_right, m);
+                    return check_pointed_model(&term_left, m) || check_pointed_model(&term_right, m);
                 }
             }
         }
@@ -120,7 +136,7 @@ pub fn check_pointed_model(formula: ModalFormula, m: &S5PointedModel) -> bool{
             match conn {
                 s5rust::modal::ModalUnary::Not => {
                     // println!("Not");
-                    return !check_pointed_model(term, m);
+                    return !check_pointed_model(&term, m);
                 },
                 s5rust::modal::ModalUnary::Box => {
                     // println!("Box");
@@ -130,7 +146,7 @@ pub fn check_pointed_model(formula: ModalFormula, m: &S5PointedModel) -> bool{
                     while flag && i<set.len(){
                         let val = m.model.get(i).unwrap().clone();
                         let u = S5PointedModel {model: set.clone(), world: val.to_owned()};
-                        flag = check_pointed_model(term.clone(), &u);
+                        flag = check_pointed_model(&term.clone(), &u);
                         i = i+1;
                     };
                     return flag;
@@ -143,7 +159,7 @@ pub fn check_pointed_model(formula: ModalFormula, m: &S5PointedModel) -> bool{
                     while !flag && i<set.len() {
                         let val = m.model.get(i).unwrap().clone();
                         let u = S5PointedModel {model: set.clone(), world: val.to_owned()};
-                        flag = check_pointed_model(term.clone(), &u);
+                        flag = check_pointed_model(&term.clone(), &u);
                         i = i+1;
                     }
                     return flag
@@ -162,7 +178,7 @@ pub fn get_models(formula: ModalFormula, universe:Vec<String>) -> Vec<S5PointedM
     s5_pointed_models.iter()
         .for_each(|pointed| {
             let f = formula.clone();
-            if check_pointed_model(f, pointed){
+            if check_pointed_model(&f, pointed){
                 s5_filtered.push(pointed.clone());
             }
         });
