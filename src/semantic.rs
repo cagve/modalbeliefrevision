@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fmt;
 
 use std::fs::File;
@@ -7,7 +8,8 @@ use s5rust::formula::Tree;
 use s5rust::parser::build_formula;
 use s5rust::modal::*;
 use s5rust::prop::PropBinary::*;
-use itertools::Itertools;
+use crate::utils::*;
+use crate::distance::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct S5PointedModel {
@@ -30,15 +32,32 @@ impl S5PointedModel{
         println!("dot_content = {:?}", dot_content);
 
         let mut file = File::create("hola.dot").expect("Unable to create file");
-        file.write_all(dot_content.as_bytes());
+        let _ = file.write_all(dot_content.as_bytes());
     } 
+
+    pub fn print_order(&self, set:Vec<S5PointedModel>){
+        let order = pointed_model_order(&set, &self);
+        let mut order_distances:Vec<Lexicographic> = order.clone().iter().map(|x| x.distance.clone()).collect();
+        // REMOVE DUPLICATES. vvvvvvvvvvvvvvvvvvvvvvv
+        let mut seen = HashSet::new();
+        order_distances.retain(|item| seen.insert(item.clone()));
+        // REMOVE DUPLCIATES ^^^^^^^^^^^^^^^^^^^^^^^^
+        for distance in order_distances{
+            // let v = get_pointed_model_at_distance(order, distance);
+            // println!("> {}", distance);
+            // for model in v{
+            //     println!("  | {}", model);
+            //
+            // }
+        };
+    }
 }
 
 
 impl fmt::Display for S5PointedModel {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut model_clone:Vec<String> = Vec::new();
-        let mut world_clone = String::new();
+        let mut world_clone: String = String::new();
         self.model.iter()
             .for_each(|world| {
                     if world == ""  {
@@ -57,54 +76,6 @@ impl fmt::Display for S5PointedModel {
     }
 }
 
-
-pub fn generate_propset(n: usize) -> String {
-    let mut prop_set: Vec<char> = Vec::with_capacity(n);
-
-    for i in 0..n { // start at p
-        prop_set.push((i as u8 + b'p') as char);
-    } 
-    
-    let string: String = prop_set.into_iter().collect();
-    return string;
-}
-
-pub fn generate_universe(propset: String) -> Vec<String>{
-    let elements: Vec<char> = propset.chars().collect();
-    let mut combinations = Vec::new();
-
-    // Generar todas las combinaciones posibles
-    for i in 1..=elements.len() {
-        for combo in elements.iter().combinations(i) {
-            let valuation: String = combo.into_iter().map(|i| i.to_string()).collect::<String>();
-            combinations.push(valuation);
-        }
-    }
-    combinations.push("".to_string());
-    return combinations;
-}
-
-pub fn generate_all_poss_set(universe:&Vec<String>) -> Vec<Vec<String>>{
-    let powerset = universe.iter()
-        .map(|s| s.to_string())
-        .powerset()
-        .map(|subset| subset.into_iter().collect())
-        .collect();
-    return powerset;
-}
-
-pub fn generate_all_poss_pointed_set(universe:&Vec<String>) -> Vec<S5PointedModel>{
-    let mut s5_pointed_models:Vec<S5PointedModel> = Vec::new();
-    let powerset = generate_all_poss_set(universe);
-    powerset.iter()
-        .for_each(|set|{
-            for world in set.iter() {
-                let m = S5PointedModel {model:set.to_vec(), world:world.to_string()};
-                s5_pointed_models.push(m);
-            }
-        });
-    return s5_pointed_models
-}
 
 
 pub fn check_pointed_model(formula: &ModalFormula, m: &S5PointedModel) -> bool{
@@ -173,7 +144,7 @@ pub fn check_pointed_model(formula: &ModalFormula, m: &S5PointedModel) -> bool{
 }
 
 pub fn get_models(formula: ModalFormula, universe:Vec<String>) -> Vec<S5PointedModel>{
-    let s5_pointed_models = generate_all_poss_pointed_set(&universe);
+    let s5_pointed_models = generate_all_poss_pointed(&universe);
     let mut s5_filtered:Vec<S5PointedModel> = Vec::new();
     s5_pointed_models.iter()
         .for_each(|pointed| {

@@ -3,7 +3,7 @@ use std::fmt::format;
 use std::fs::File;
 use std::io::Write;
 
-use crate::distance::{get_base_closest_set, distance_pointed_to_pointed, distance_to_closest};
+use crate::distance::{get_base_closest_set, distance_pointed_to_pointed, min_distance};
 use crate::revision::Revision;
 use crate::semantic::S5PointedModel;
 
