@@ -123,7 +123,7 @@ pub fn pointed_model_order(set: &Vec<S5PointedModel>, reference: &S5PointedModel
     return order;
 }
 
-pub fn get_pointed_model_at_distance(order: Vec<PointedModelDistance>, distance: Lexicographic) -> Vec<PointedModelDistance>{
+pub fn get_pointed_model_at_distance(order: &Vec<PointedModelDistance>, distance: Lexicographic) -> Vec<PointedModelDistance>{
     return order.iter()
         .filter(|&x| x.distance == distance)
         .cloned()

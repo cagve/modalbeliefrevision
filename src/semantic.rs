@@ -42,13 +42,16 @@ impl S5PointedModel{
         let mut seen = HashSet::new();
         order_distances.retain(|item| seen.insert(item.clone()));
         // REMOVE DUPLCIATES ^^^^^^^^^^^^^^^^^^^^^^^^
+        
+        println!("Order over {} ", self);
         for distance in order_distances{
-            // let v = get_pointed_model_at_distance(order, distance);
-            // println!("> {}", distance);
-            // for model in v{
-            //     println!("  | {}", model);
-            //
-            // }
+            let current_d = distance.clone(); 
+            let v = get_pointed_model_at_distance(&order, current_d);
+            println!("> D={}", distance);
+            for model in v{
+                println!("  | Model = {}", model.pointed_model);
+
+            }
         };
     }
 }
