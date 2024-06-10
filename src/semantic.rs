@@ -18,7 +18,7 @@ pub struct S5PointedModel {
 }
 
 impl S5PointedModel{
-    pub fn render(&self){
+    pub fn render(&self, file:&str) -> std::io::Result<()> {
         let mut dot_content = String::new();
         dot_content.push_str("digraph G {\n");
         for node in &self.model {
@@ -31,8 +31,9 @@ impl S5PointedModel{
         dot_content.push_str("}\n");
         println!("dot_content = {:?}", dot_content);
 
-        let mut file = File::create("hola.dot").expect("Unable to create file");
-        let _ = file.write_all(dot_content.as_bytes());
+        let mut file = File::create(file).expect("Error on file.");
+        let _ = file.write_all(dot_content.as_bytes())?;
+        Ok(())
     } 
 
     pub fn print_order(&self, set:Vec<S5PointedModel>){

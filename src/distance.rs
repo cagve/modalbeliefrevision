@@ -148,7 +148,7 @@ pub fn minimal_set_of_pointed_model(set: &Vec<S5PointedModel>, reference: &S5Poi
 }
 
 // Return the closest world
-fn closest_world(points: &Vec<String>, world: &str) -> String {
+pub fn closest_world(points: &Vec<String>, world: &str) -> String {
     let order = world_order(points, world);
     let closest_world = order.first().unwrap().world.clone();
     return closest_world;
