@@ -26,6 +26,7 @@ pub fn dot_distance(file: &str, p1: &S5PointedModel, p2:&S5PointedModel){
 
     dot_content.push_str(&d1);
     dot_content.push_str(&d2);
+    let distance = distance_pointed_to_pointed(p1, p2);
 
     // Create arrows m1 -> m2
     for world in p1.model.iter() {
@@ -33,9 +34,11 @@ pub fn dot_distance(file: &str, p1: &S5PointedModel, p2:&S5PointedModel){
         let mut w1 = world.clone();
         let mut w2 = closest.clone();
         let d = hamming_distance(&w1, &w2);
-        if w1 == ""  { w1 = EMPTY.to_string(); } // TODO se repite todo el rato. Refactorizar
-        if w2 == ""  { w2 = EMPTY.to_string(); } // TODO se repite todo el rato. Refactorizar
-        dot_content.push_str(&format!("node_{}{} -> node_{}{}[label=\"{}\", color=\"red\"]\n", 0,w1,1,w2, d));
+        // let mut beauty_w1 = String::new();
+        // let mut beauty_w2 = String::new();
+        // if w1 == ""  { beauty_w1 = EMPTY.to_string(); } // TODO se repite todo el rato. Refactorizar
+        // if w2 == ""  { beauty_w2 = EMPTY.to_string(); } // TODO se repite todo el rato. Refactorizar
+        dot_content.push_str(&format!("node_{}{} -> node_{}{}[label=\"{}\", fontcolor=\"red\", color=\"red\"]\n", 0,w1,1,w2, d));
     }
     // Create arrows m2 -> m1
     for world in p2.model.iter() {
@@ -43,12 +46,17 @@ pub fn dot_distance(file: &str, p1: &S5PointedModel, p2:&S5PointedModel){
         let mut w2 = world.clone();
         let mut w1 = closest.clone();
         let d = hamming_distance(&w1, &w2);
-        if w1 == ""  { w1 = EMPTY.to_string(); } // TODO se repite todo el rato. Refactorizar
-        if w2 == ""  { w2 = EMPTY.to_string(); } // TODO se repite todo el rato. Refactorizar
-        dot_content.push_str(&format!("node_{}{} -> node_{}{}[lable=\"{}'\", color=\"blue\"]\n", 1,w2,0,w1,d));
+        // if w1 == ""  { w1 = EMPTY.to_string(); } // TODO se repite todo el rato. Refactorizar
+        // if w2 == ""  { w2 = EMPTY.to_string(); } // TODO se repite todo el rato. Refactorizar
+        dot_content.push_str(&format!("node_{}{} -> node_{}{}[label=\"{}\", fontcolor=\"blue\", color=\"blue\"]\n", 1,w2,0,w1,d));
     }
+    
+    // actual world
+    let d = hamming_distance(&p1.world, &p2.world);
+    dot_content.push_str(&format!("node_{}{} -> node_{}{}[label=\"{}\", fontcolor=\"darkgreen\", style=\"dashed\", color=\"darkgreen\"]\n",0,p1.world,1,p2.world,d));
 
-    dot_content = create_dot("Dot distance", &dot_content);
+    let title = &format!("Dot distance {}", distance);
+    dot_content = create_dot(title, &dot_content);
 
     
     write_dot(file, &dot_content);
@@ -63,9 +71,9 @@ pub fn dot_model(pointed: &S5PointedModel, cluster_id:usize) -> String{
             let mut world_name = w.to_string(); 
             if world_name == ""  { world_name = EMPTY.to_string(); } // TODO se repite todo el rato. Refactorizar
             if w.clone() == pointed.world {
-                world_content.push_str(&format!("node_{}{} [label=\"{}\", shape=doublecircle]\n", cluster_id,world_name,world_name));
+                world_content.push_str(&format!("node_{}{} [label=\"{}\", shape=doublecircle]\n", cluster_id,w,world_name));
             }else{
-                world_content.push_str(&format!("node_{}{} [label=\"{}\", shape=circle]\n", cluster_id,world_name, world_name));
+                world_content.push_str(&format!("node_{}{} [label=\"{}\", shape=circle]\n", cluster_id,w, world_name));
             }
         });
 

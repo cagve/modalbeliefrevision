@@ -111,6 +111,7 @@ impl Revision {
     }
     pub fn beauty(&self, comp: &str) {
         match comp {
+            "distance"    => println!("{}", self.distance),
             "formula"    => println!("{} * {}", self.phi, self.mu),
             "output"    => {
                 println!("Output models: {}", self.output.len());
@@ -123,6 +124,35 @@ impl Revision {
             "input_set" => {
                 println!("Input models: {}", self.input_set.len());
                 self.input_set.iter().for_each(|x| println!("{}", x))
+            },
+            "debug"     => {
+                println!("{} * {} = ", self.phi, self.mu);
+                self.output.iter().for_each(|x| {
+                    println!("| {}", x);
+                })
+            },
+            _           => println!("Error") // TODO error managment
+        };
+
+    }
+    pub fn verbose_beauty(&self, comp: &str) {
+        match comp {
+            "distance"    => println!("{}", self.distance),
+            "formula"    => println!("{} * {}", self.phi, self.mu),
+            "output"    => {
+                println!("Output models: {}", self.output.len());
+                self.output.iter().for_each(|x| println!("{}", x))
+            },
+            "base_set"  => {
+                println!("Base models: {}", self.base_set.len());
+                self.base_set.iter().for_each(|x| println!("{}", x))
+            },
+            "input_set" => {
+                println!("Input models: {}", self.input_set.len());
+                self.input_set.iter().for_each(|x| {
+                    let d = min_distance(&self.base_set, x);
+                    println!("{} = {}", x, d)
+                })
             },
             "debug"     => {
                 println!("{} * {} = ", self.phi, self.mu);
