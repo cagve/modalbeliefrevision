@@ -170,7 +170,7 @@ fn closest_model(set_models: &Vec<Vec<String>>, set_of_worlds: &Vec<String>) -> 
 
 
 // Return the distance from a model to the closest model from a set of model.
-fn distance_set_models_to_model(set_models: &Vec<Vec<String>>, model: &Vec<String>) -> usize{
+pub fn distance_set_models_to_model(set_models: &Vec<Vec<String>>, model: &Vec<String>) -> usize{
     let closest_model = closest_model(set_models, model);
     return distance_model_to_model(&closest_model, model);
 }
@@ -254,4 +254,5 @@ pub fn get_base_closest_set(base: &Vec<S5PointedModel>, input: &Vec<S5PointedMod
     // REMOVE DUPLCIATES ^^^^^^^^^^^^^^^^^^^^^^^^
     return result;
 }
+
 
