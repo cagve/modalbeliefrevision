@@ -3,6 +3,8 @@ use graphics::dot_distance;
 use s5rust::parser::build_formula;
 use s5rust::modal::*;
 
+use crate::distance::closest_pointed_model;
+use crate::distance::min_distance;
 use crate::semantic::*; //TODO refactor name
 use crate::revision::*;
 use crate::utils::*;
@@ -50,6 +52,7 @@ fn simple_output(revision: &Revision){
 
 fn verbose_output(revision: &Revision){
     revision.beauty("formula");
+    print!("D= ");
     revision.beauty("distance");
     revision.beauty("base_set");
     revision.verbose_beauty("input_set");
@@ -94,18 +97,95 @@ fn counterexample(){
 fn main() {
     let prop_set = generate_propset(2); 
     let universe = generate_universe(prop_set.clone());
-    let mut f1: ModalFormula = build_formula("(box p) and not q").unwrap();
-    let mut f2: ModalFormula = build_formula("(diamond(not p)) or q").unwrap();
+    let mut f1: ModalFormula = build_formula("(box p) and (not q)").unwrap();
+    let mut f2: ModalFormula = build_formula("(not p) or (not q)").unwrap();
     let mut f3: ModalFormula = build_formula("q").unwrap();
-    // let mut f1: ModalFormula = build_formula("p and (box q)").unwrap();
-    // let mut f2: ModalFormula = build_formula("box (not q) ").unwrap();
 
-    let revision = Revision::new(f1.clone(),f2.clone(),universe.clone());
+    // let revision = Revision::new(f1.clone(),f2.clone(),universe.clone());
     // verbose_output(&revision);
-    // order_output(&revision);
-    counterexample();
+    // println!("{}", get_models(f2, ));
+    // counterexample();
 
 
+    // EXAMPLE 8
+    let a1 = "(not q)";
+    let a2 = "(p and q) ";
+    let b1 ="(not p)";
+    let b2 = "(p and box(p implies q)) ";
+    let c1 = "(box p)";
+    let c2 ="(diamond (not p))";
+    let d1 = "(box p )";
+    let d2 = "(box (not p))";
+
+    let example8 = vec![(a1,a2),(b1,b2),(c1,c2),(d1,d2)];
     
+    // Example 9
+    let a1 = "(p and q)";
+    let a2 = "(not q)";
+    let b1 ="(p and (box(p implies q)))";
+    let b2 = "(not q)";
+    let c1 = "(box q)";
+    let c2 ="(not q)";
+    let d1 = "((box q) and p)";
+    let d2 = "(not q)";
+    let example9 =  vec![(a1,a2),(b1,b2),(c1,c2),(d1,d2)];
+
+    example_paper(example9, universe);
+
+}
+
+// Example 8
+fn example_paper (example:Vec<(&str,&str)>, universe: Vec<String>){
+
+    example.iter().for_each(|x|{
+        let mut f1: ModalFormula = build_formula(x.0).unwrap();
+        let mut f2: ModalFormula = build_formula(x.1).unwrap();
+        let revision = Revision::new(f1.clone(),f2.clone(),universe.clone());
+        let dmin = revision.clone().distance;
+        let phi_latex = to_latex(revision.phi);
+        let mu_latex = to_latex(revision.mu);
+        let mut output = format!("
+            \\begin{{table}}[ht!]
+            \\centering
+            Example: $({phi_latex})*({mu_latex})$ \\\\
+            Min $\\Delta$: ${dmin}$ \\\\
+            \\begin{{tabular}}{{ | c | c | c |}}
+            \\hline
+            Models of ${phi_latex}$ & Models of ${mu_latex}$ & Distance \\\\
+            \\hline
+        ");
+        revision.input_set.iter().for_each(|x| {
+            let closest_pointed = closest_pointed_model(&revision.base_set, x);
+            let ph_model = closest_pointed.to_latex().to_string();
+            let mu_model = x.to_latex().to_string();
+            let d = min_distance(&revision.base_set, x);
+            if d == dmin{
+                output.push_str("\\rowcolor{{green}}");
+            }
+            // output.push_str(format!("{ph_model} & {mu_model} & {d} \\\\").to_string());
+            // output.push_str(format!("{} & {} & {} \\\\", ph_model, mu_model, d.to_string()));
+            // println!("{} & {} & {} \\\\",  closest_pointed.to_latex(), x.to_latex(), d);
+        });
+        println!("\\hline");
+        println!("\\end{{tabular}}");
+        println!("\\end{{table}}");
+        println!("%===================");
+        // verbose_output(&revision);
+    });
+
+
+}
+
+
+fn to_latex(f:ModalFormula) -> String{
+    let mut f = f.to_string();
+    f = f.replace("◻", "\\Box ");
+    f = f.replace("◊", "\\Diamond ");
+    f = f.replace("¬", "\\lnot ");
+    f = f.replace(" ↔ ", "\\leqv ");
+    f = f.replace(" → ", "\\limp ");
+    f = f.replace(" ∧ ", "\\land ");
+    f = f.replace(" ∨ ", "\\lor ");
+    return f
 
 }

@@ -18,6 +18,32 @@ pub struct S5PointedModel {
 }
 
 impl S5PointedModel{
+    pub fn to_latex(&self) -> String{
+        let mut n = 0;
+        let mut tab = String::new();
+        tab.push_str("$\\{");
+        self.model.iter().for_each(|x|{
+            if n != 0{
+                tab.push_str(",");
+            }
+            n = n+1;
+            let mut world_1 = x.clone();
+            let mut world_2 = self.world.clone();
+            if x.clone() == "" {
+                world_1 = "\\emptyset".to_string();
+            }
+            if self.world.clone() == "" {
+                world_2 = "\\emptyset".to_string();
+            }
+            if world_1 == world_2.clone() {
+                tab.push_str(&format!("\\underline{{{}}}", world_1).to_string());
+            }else{
+                tab.push_str(&format!("{}", world_1).to_string());
+            }
+        });
+        tab.push_str("$\\}");
+        return tab
+    }
     pub fn render(&self, file:&str) -> std::io::Result<()> {
         let mut dot_content = String::new();
         dot_content.push_str("digraph G {\n");

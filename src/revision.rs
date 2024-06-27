@@ -151,7 +151,7 @@ impl Revision {
                 println!("Input models: {}", self.input_set.len());
                 self.input_set.iter().for_each(|x| {
                     let d = min_distance(&self.base_set, x);
-                    println!("{} = {}", x, d)
+                    println!("{} > {}", x, d)
                 })
             },
             "debug"     => {
