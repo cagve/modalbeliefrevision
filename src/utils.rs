@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::semantic::*;
 use itertools::Itertools;
 
@@ -47,4 +49,10 @@ pub fn generate_all_poss_pointed(universe:&Vec<String>) -> Vec<S5PointedModel>{
             }
         });
     return s5_pointed_models
+}
+
+pub fn vect_difference(v1: &Vec<S5PointedModel>, v2: &Vec<S5PointedModel>) -> Vec<S5PointedModel> {
+    let s1: HashSet<S5PointedModel> = v1.iter().cloned().collect();
+    let s2: HashSet<S5PointedModel> = v2.iter().cloned().collect();
+    (&s1 - &s2).iter().cloned().collect()
 }
