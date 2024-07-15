@@ -101,10 +101,10 @@ fn counterexample(){
 fn main() {
     let prop_set = generate_propset(2); 
     let universe = generate_universe(prop_set.clone());
-    let mut f1: ModalFormula = build_formula("box (p or q)").unwrap();
-    let mut fb: ModalFormula = build_formula("(not q) or (box (not p))").unwrap();
-    let mut f2: ModalFormula = build_formula("diamond ((not p) and (not q))").unwrap();
-    let mut f3: ModalFormula = build_formula("box (not p)").unwrap();
+    let mut f1: ModalFormula = build_formula("p and q").unwrap();
+    let mut fb: ModalFormula = build_formula("(not q) and (not p)").unwrap();
+    let mut f2: ModalFormula = build_formula("not q").unwrap();
+    let mut f3: ModalFormula = build_formula("not p").unwrap();
     // let mut fa: ModalFormula = build_formula("(not (box(p implies q))) and (p implies q) and (").unwrap(); 
     // let mut fb: ModalFormula = build_formula("(not (box(p implies q))) and (p implies q) and (q implies ((not (box((not q) implies p))) or (not (box (q implies (not p))))))").unwrap(); 
     // let mut f3: ModalFormula = build_formula("(not q) and (diamond q) and ((diamond (p and not q)) implies (box(q or p))) and ((not (p or q)) implies (diamond (q and not p))) and ((p and (not q)) implies (diamond (p and q)))").unwrap(); THIS IS RESULT
@@ -112,13 +112,12 @@ fn main() {
 
     let r1 = Revision::new(f1.clone(),fb.clone(),universe.clone());
     let r2 = Revision::new(f1.clone(),f2.clone(),universe.clone());
-    verbose_output(&r2);
-    // let o1 = r1.output;
-    // let o2 = iterated_rev(&r2, f3, universe);
-    // println!("o1 = {:?}", o1);
-    // println!("o2 = {:?}", o2);
-    // let f = equiv_output(o1, o2);
-    // println!("f = {:?}", f);
+    let o1 = r1.output;
+    let o2 = iterated_rev(&r2, f3, universe);
+    println!("o1 = {:?}", o1);
+    println!("o2 = {:?}", o2);
+    let f = equiv_output(o1, o2);
+    println!("f = {:?}", f);
 
 
     // // EXAMPLE 8
