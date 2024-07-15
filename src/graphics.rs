@@ -144,12 +144,8 @@ pub fn debug_output(revision:&Revision) -> String{
     cluster_id = cluster_id+intersection.len();
     let dot_base_str = dot_models("Far", &disjoint_set, cluster_id);
     dot_content.push_str(&dot_base_str);
-
     // Arrow
-
     return dot_content;
-
-    
 }
 
 pub fn create_dot(title: &str, dot_content:&str) -> String{

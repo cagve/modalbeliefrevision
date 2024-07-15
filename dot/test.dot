@@ -1,0 +1,14 @@
+digraph G {
+    label = "p ∨ q * ¬p ∧ ◻¬q"
+    node [width=0.5, height=0.5, fixedsize=true]
+    subgraph cluster_1 {
+        edge [style=invis]
+        label="p ∨ q * ¬p ∧ ◻¬q"
+        subgraph cluster_0 {
+        label=""
+        node_0p [label="p", shape=circle]
+node_0 [label="∅", shape=doublecircle]
+ }
+         }
+        
+}

@@ -7,6 +7,9 @@ use s5rust::parser::build_formula;
 use s5rust::modal::*;
 
 use crate::distance::closest_pointed_model;
+use crate::distance::distance_pointed_to_pointed;
+use crate::distance::distance_set_models_to_model;
+use crate::distance::get_base_closest_set;
 use crate::distance::min_distance;
 use crate::semantic::*; //TODO refactor name
 use crate::revision::*;
@@ -101,10 +104,10 @@ fn counterexample(){
 fn main() {
     let prop_set = generate_propset(2); 
     let universe = generate_universe(prop_set.clone());
-    let mut f1: ModalFormula = build_formula("p and q").unwrap();
-    let mut fb: ModalFormula = build_formula("(not q) and (not p)").unwrap();
-    let mut f2: ModalFormula = build_formula("not q").unwrap();
-    let mut f3: ModalFormula = build_formula("not p").unwrap();
+    let mut f1: ModalFormula = build_formula("p or q").unwrap();
+    let mut fb: ModalFormula = build_formula("(not p) and (diamond (not q))").unwrap();
+    let mut f2: ModalFormula = build_formula("not p").unwrap();
+    let mut f3: ModalFormula = build_formula("diamond (not q)").unwrap();
     // let mut fa: ModalFormula = build_formula("(not (box(p implies q))) and (p implies q) and (").unwrap(); 
     // let mut fb: ModalFormula = build_formula("(not (box(p implies q))) and (p implies q) and (q implies ((not (box((not q) implies p))) or (not (box (q implies (not p))))))").unwrap(); 
     // let mut f3: ModalFormula = build_formula("(not q) and (diamond q) and ((diamond (p and not q)) implies (box(q or p))) and ((not (p or q)) implies (diamond (q and not p))) and ((p and (not q)) implies (diamond (p and q)))").unwrap(); THIS IS RESULT
@@ -112,8 +115,12 @@ fn main() {
 
     let r1 = Revision::new(f1.clone(),fb.clone(),universe.clone());
     let r2 = Revision::new(f1.clone(),f2.clone(),universe.clone());
-    let o1 = r1.output;
+    // model_to_table(r2.output, get_models(f3, universe), "base".to_string(), "input".to_string());
+    // debug_iterated_rev(f1, f2, f3, universe);
+    // verbose_output(&r1);
+    // verbose_output(&r2);
     let o2 = iterated_rev(&r2, f3, universe);
+    let o1 = r1.output;
     println!("o1 = {:?}", o1);
     println!("o2 = {:?}", o2);
     let f = equiv_output(o1, o2);
@@ -188,10 +195,70 @@ Models of ${phi_latex}$ & Models of ${mu_latex}$ & Distance \\\\
         println!("{}", output);
         // verbose_output(&revision);
     });
-
-
 }
 
+fn model_to_table (base:Vec<S5PointedModel>, input: Vec<S5PointedModel>, base_str:String, input_str:String ) {
+        let binding = closest_set_pointed(&base,&input);
+        let c = binding.get(0).unwrap();
+        let dmin = min_distance(&base, c); 
+        let phi_latex = base_str;
+        let mu_latex = input_str;
+        let mut output = format!("
+\\begin{{table}}[ht!]
+\\centering
+Example: $({phi_latex})*({mu_latex})$ \\\\
+Min $\\Delta$: ${dmin}$ \\\\
+\\begin{{tabular}}{{ | c | c | c |}}
+\\hline
+Models of ${phi_latex}$ & Models of ${mu_latex}$ & Distance \\\\
+\\hline
+        ");
+        input.iter().for_each(|x| {
+            let closest_pointed = closest_pointed_model(&base, x);
+            let ph_model = closest_pointed.to_latex().to_string();
+            let mu_model = x.to_latex().to_string();
+            let d = min_distance(&base, x);
+            if d == dmin{
+                output.push_str("\\rowcolor{green}");
+            }
+            output.push_str(&format!("{ph_model} & {mu_model} & ${d}$ \\\\ \n").to_string());
+        });
+        output.push_str(&format!("\\hline"));
+        output.push_str(&format!("\\end{{tabular}}"));
+        output.push_str(&format!("\\end{{table}}"));
+        output.push_str(&format!("%==================="));
+        println!("{}", output);
+}
+fn rev_to_table (revision: Revision) {
+        let dmin = revision.clone().distance;
+        let phi_latex = to_latex(revision.phi);
+        let mu_latex = to_latex(revision.mu);
+        let mut output = format!("
+\\begin{{table}}[ht!]
+\\centering
+Example: $({phi_latex})*({mu_latex})$ \\\\
+Min $\\Delta$: ${dmin}$ \\\\
+\\begin{{tabular}}{{ | c | c | c |}}
+\\hline
+Models of ${phi_latex}$ & Models of ${mu_latex}$ & Distance \\\\
+\\hline
+        ");
+        revision.input_set.iter().for_each(|x| {
+            let closest_pointed = closest_pointed_model(&revision.base_set, x);
+            let ph_model = closest_pointed.to_latex().to_string();
+            let mu_model = x.to_latex().to_string();
+            let d = min_distance(&revision.base_set, x);
+            if d == dmin{
+                output.push_str("\\rowcolor{green}");
+            }
+            output.push_str(&format!("{ph_model} & {mu_model} & ${d}$ \\\\ \n").to_string());
+        });
+        output.push_str(&format!("\\hline"));
+        output.push_str(&format!("\\end{{tabular}}"));
+        output.push_str(&format!("\\end{{table}}"));
+        output.push_str(&format!("%==================="));
+        println!("{}", output);
+}
 
 fn to_latex(f:ModalFormula) -> String{
     let mut f = f.to_string();
@@ -220,13 +287,33 @@ fn equiv_output(r1: Vec<S5PointedModel>, r2:Vec<S5PointedModel>) -> bool{
     return flag;
 }
 
+fn debug_iterated_rev(f1:ModalFormula, f2:ModalFormula, f3:ModalFormula, universe: Vec<String>){
+    let r1 = Revision::new(f1.clone(),f2.clone(),universe.clone());
+    println!("Models of {} ", r1.beauty_distance());
+
+    for m in r1.output.clone(){
+        println!("{}",m);
+    }
+
+    let f3models = get_models(f3.clone(), universe);
+    println!("Models of {} ", f3);
+    for m in f3models.clone(){
+        let c = closest_pointed_model(&r1.output, &m);
+        println!("{} to {} at {}",m,c, distance_pointed_to_pointed(&m, &c));
+    }
+
+    println!("Models of ({}*{})*{}", f1,f2,f3);
+    for m in get_base_closest_set(&r1.output, &f3models){
+        println!("{}",m);
+    }
+
+
+}
+
+
 fn iterated_rev(r1: &Revision, f3:ModalFormula, universe: Vec<String>) -> Vec<S5PointedModel> {
     let outputr1 = r1.clone().output; // Models of revision f1 * f2
-    println!("outputr1 = {:?}", outputr1);
     let models = get_models(f3, universe); // Modles of f3.
-    for m in models.clone(){
-        println!("{}", m);
-    }
     let r2 = closest_set_pointed(&outputr1, &models); // Revision (f1*f2) * f3
     return r2;
 }
