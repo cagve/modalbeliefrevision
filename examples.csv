@@ -1,4 +1,2 @@
-(p \land q) \revstrict \lnot q           
-(p \land \Box(p \limp q)) \revstrict \lnot q 
-\Box q \revstrict \lnot q 
-(\Box q \land p) \revstrict \lnot q 
+# Splitting language counterexample.
+
