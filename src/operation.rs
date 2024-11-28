@@ -1,6 +1,10 @@
 use std::collections::HashSet;
 use s5rust::{modal::ModalFormula, parser::build_formula};
-use crate::{generate_propset_from_atoms, generate_universe, get_atoms_from_fromula, get_mmodels, get_models, get_universe_from_formula, power_set, projection, remove_duplicates, same_models, S5PointedModel};
+use crate::{get_atoms_from_fromula, power_set, remove_duplicates, s5_contains, same_model, same_models, same_s5model, same_vecs5model, vec_union, S5PointedModel};
+use crate::get_universe_from_formula;
+use crate::get_models;
+use crate::generate_universe;
+use crate::generate_propset_from_atoms;
 use crate::contains_b_in_a;
 
 fn projection_w(world: &String, voc: &String) -> String{
@@ -49,145 +53,121 @@ fn circ(valset1: &Vec<String>, valset2: &Vec<String>) -> Vec<String>  {
 }
 
 
-pub fn generate_Z(pm1:Vec<S5PointedModel>, pm2: Vec<S5PointedModel>, voc1:String, voc2:String){
-    // let z = Vec::new();
-    //
-    // let circ = circ(voc1, voc2); Z
-    // TODO
-    // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-}
+pub fn generate_Z(pm1:Vec<S5PointedModel>, pm2: Vec<S5PointedModel>, voc1:Vec<String>, voc2:Vec<String>) -> Vec<S5PointedModel>{
+    // Genero el universo a partir de los modelos del primer conjunto de modelos puntuados. Es decir genero 2^P
+    // let mut voc1 = Vec::new();
+    // pm1.iter() 
+    //     .for_each(|x| voc1.push(x.get_atoms()));
+    // voc1 = remove_duplicates(voc1);
+    let uni1 = generate_universe(voc1.concat());
 
-fn oplus(set1: &Vec<Vec<String>>, voc1:String, set2: &Vec<Vec<String>>, voc2:String, debug:bool) -> Vec<Vec<String>>  {
-    // let pow_voc1 = power_set(voc1);
-    // let pow_voc2 = (power_set(voc2));
-    let pow_voc1 = generate_universe(voc1.clone());
-    let pow_voc2 = generate_universe(voc2.clone());
+    // Genero el universo a partir de los modelos del segundo conjunto de modelos puntuados. Es decir genero 2^Q
+    // let mut voc2 = Vec::new();
+    // pm2.iter() 
+    //     .for_each(|x| voc2.push(x.get_atoms()));
+    // voc2 = remove_duplicates(voc2);
+    let uni2 = generate_universe(voc2.concat());
 
-    println!("pow_voc1 = {:?}", pow_voc1);
-    println!("pow_voc2 = {:?}", pow_voc2);
 
-    let mut result = Vec::new();
-    let temp = circ(&pow_voc1, &pow_voc2);
-    let universe = power_set(&temp);
-
-    for model in &universe {
-        let projection1 = projection(&model, &voc1);
-        let projection2 = projection(&model, &voc2);
-        if debug {
-            println!(" ");
-            println!("====== Projection 1");
-            println!(">> model.clone() = {:?}", model.clone());
-            println!(">> projection = {:?}", projection1);
-            println!("====== Projection 2");
-            println!(">> model.clone() = {:?}", model.clone());
-            println!(">> projection = {:?}", projection2);
+    // Genero el conjunto de modelos de Z 
+    let op_models = circ(&uni1, &uni2);
+    let models_z = power_set(&op_models);
+    // Genero el conjunto de mundos de Z 
+    let union_worlds = vec_union(&voc1, &voc2);
+    let worlds_z  = power_set(&union_worlds);
+    
+    let mut pmodels = Vec::new();
+    for modelo in models_z {
+        for world_vec in worlds_z.clone() {
+            let world = world_vec.concat();
+            let model = modelo.clone();
+            if model.contains(&world){
+                pmodels.push(S5PointedModel{model,world});
+            }
         }
-        if contains_b_in_a(set1.clone(), projection1.clone()) && contains_b_in_a(set2.clone(), projection2.clone()){
-            result.push(model.clone());
-            if debug {
-                println!("******************************************* vvvvvv");
-                println!("DEBUG={:?} in {:?}", projection1, set1);
-                println!("DEBUG={:?} in {:?}", projection2, set2);
-                println!("******************************************* ^^^^^^");
-            }
-        }else{
-            if debug {
-                println!("DEBUG={:?} not in {:?}", projection1, set1);
-                println!("DEBUG={:?} not in {:?}", projection2, set2);
-            }
-        };
     }
 
-    let deduplicated  = remove_duplicates(result);
-    return deduplicated;
+
+    // Debug
+    return pmodels;
 }
 
-fn oplus_remove(set1: &Vec<Vec<String>>, voc1:String, set2: &Vec<Vec<String>>, voc2:String, debug:bool) -> Vec<Vec<String>>  {
-    // let pow_voc1 = power_set(voc1);
-    // let pow_voc2 = (power_set(voc2));
-    let pow_voc1 = generate_universe(voc1.clone());
-    let pow_voc2 = generate_universe(voc2.clone());
+pub fn oplus(pm1:Vec<S5PointedModel>, pm2: Vec<S5PointedModel>, voc1:Vec<String>, voc2:Vec<String>) -> Vec<S5PointedModel>{
+    let z = generate_Z(pm1.clone(), pm2.clone(), voc1.clone(), voc2.clone());
 
-    println!("pow_voc1 = {:?}", pow_voc1);
-    println!("pow_voc2 = {:?}", pow_voc2);
+    // let mut voc1 = Vec::new();
+    // pm1.iter() 
+    //     .for_each(|x| voc1.push(x.get_atoms()));
+    // voc1 = remove_duplicates(voc1);
 
-    let mut result = Vec::new();
-    let temp = circ(&pow_voc1, &pow_voc2);
-    let universe = power_set(&temp);
-    for model in &universe {
-        let projection1 = remove_proposition(model.clone(), voc2.clone());
-        let projection2 = remove_proposition(model.clone(), voc1.clone());
-        if debug {
-            println!(" ");
-            println!("====== Projection 1");
-            println!(">> model.clone() = {:?}", model.clone());
-            println!(">> projection = {:?}", projection1);
-            println!("====== Projection 2");
-            println!(">> model.clone() = {:?}", model.clone());
-            println!(">> projection = {:?}", projection2);
-        }
-        if contains_b_in_a(set1.clone(), projection1.clone()) && contains_b_in_a(set2.clone(), projection2.clone()){
-            result.push(model.clone());
-            if debug {
-                println!("******************************************* vvvvvv");
-                println!("DEBUG={:?} in {:?}", projection1, set1);
-                println!("DEBUG={:?} in {:?}", projection2, set2);
-                println!("******************************************* ^^^^^^");
+    // let mut voc2 = Vec::new();
+    // pm2.iter() 
+    //     .for_each(|x| voc2.push(x.get_atoms()));
+    // voc2 = remove_duplicates(voc2);
+
+    let mut filtered = Vec::new();
+    for w in z {
+            let projection_1 = projection_pointed(&w, &voc1.concat());
+            let projection_2 = projection_pointed(&w, &voc2.concat());
+            // println!("");
+            // println!("Model = {}", w);
+            // println!("> projection_1 = {}", projection_1);
+            // println!("> projection_2 = {}", projection_2);
+            if s5_contains(projection_1, pm1.clone()) && s5_contains(projection_2, pm2.clone()){
+                    filtered.push(w.clone());
             }
-        }else{
-            if debug {
-                println!("DEBUG={:?} not in {:?}", projection1, set1);
-                println!("DEBUG={:?} not in {:?}", projection2, set2);
-            }
-        };
-    }
+    };
 
-    let deduplicated  = remove_duplicates(result);
-    return deduplicated;
+    return filtered;
 }
 
+ 
+// SE PUEDE MEJORAR TODO MUCHO
+pub fn op(phi:ModalFormula, psi:ModalFormula) -> Vec<S5PointedModel> {
+    let universe_phi = get_universe_from_formula(&phi);
+    let universe_psi = get_universe_from_formula(&psi);
 
-pub fn op(f1: ModalFormula, f2:ModalFormula, debug:bool) ->Vec<Vec<String>> {
+    let pmmodels_phi = get_models(phi.clone(), universe_phi);
+    let pmmodels_psi = get_models(psi.clone(), universe_psi);
+    let voc1 = get_atoms_from_fromula(&phi);
+    let voc2 = get_atoms_from_fromula(&psi);
 
-    let f1_atoms = get_atoms_from_fromula(&f1);
-    let f1_pvar = generate_propset_from_atoms(f1_atoms.concat());
-    let f1_uni = generate_universe(f1_pvar.clone());
-    let f1_models = get_models(f1, f1_uni.clone()).iter().map(|x| x.clone().model).collect();
-
-    let f2_atoms = get_atoms_from_fromula(&f2);
-    let f2_pvar = generate_propset_from_atoms(f2_atoms.concat());
-    let f2_uni = generate_universe(f2_pvar.clone());
-    let f2_models = get_models(f2, f2_uni.clone()).iter().map(|x| x.clone().model).collect();
-
-    let result = oplus_remove(&f1_models, f1_pvar.clone(), &f2_models, f2_pvar.clone(), debug);
-
-    if debug{
-        println!("---------------------");
-        println!("At={:?}", f1_atoms );
-        println!("Pvar={:?}", f1_pvar);
-        println!("Uni={:?}", f1_uni);
-        println!("Models={:?}", f1_models);
-
-        println!("---------------------");
-        println!("At={:?}", f2_atoms );
-        println!("Pvar={:?}", f2_pvar);
-        println!("Uni={:?}", f2_uni);
-        println!("Models={:?}", f2_models);
-
-    }
+    let result = oplus(pmmodels_phi, pmmodels_psi, voc1, voc2);
     return result;
 }
- 
+
+
 pub fn test_fn(){
-    let W = vec!["pq".to_string(), "q".to_string(), "p".to_string(),"".to_string()];
-    let s5 = S5PointedModel{
+    let W = vec!["pq".to_string(), "q".to_string()];
+    let U = vec!["qp".to_string(), "q".to_string()];
+
+    let s51 = S5PointedModel{
         model: W.clone(),
-        world: "pq".to_string()
+        world: "q".to_string()
     };
-    let projectionW = projection_model(&W, &"q".to_string());
-    let projectionPM = projection_pointed(&s5, &"q".to_string());
-    println!("projectionW = {:?}", projectionW);
-    println!("projectionPM = {:?}", projectionPM);
+
+    let s52 = S5PointedModel{
+        model: U.clone(),
+        world: "q".to_string()
+    };
+
+    // let Z = generate_Z(vec![s51], vec![s52]);
+    // println!("Z = {:?}", Z);
+    // let filtered = oplus(vec![s51], vec![s52]);
+    // for (idx, pm)  in filtered.iter().enumerate() {
+    //     println!("PModel {}", idx);
+    //     println!(" > {} ", pm);
+    // }
+    let s1 = vec![s51.clone()];
+    let s2 = vec![s52.clone()];
+    let r = same_vecs5model(s2.clone(), s1.clone());
+    let f = s5_contains(s51.clone(), s2);
+    let v = same_s5model(&s51, &s52);
+    let z = same_model(W, U);
+    println!("r = {:?}", r);
+    println!("f = {:?}", f);
+    println!("v = {:?}", v);
+    println!("z = {:?}", z);
 }
 
 pub fn theorem(fstr1:String, fstr2:String, debug:bool) -> bool{
@@ -197,20 +177,27 @@ pub fn theorem(fstr1:String, fstr2:String, debug:bool) -> bool{
 
 
     let con_uni = get_universe_from_formula(&con);
-    let con_models = get_mmodels(con.clone(), con_uni.clone());
+    let con_models = get_models(con.clone(), con_uni.clone());
 
-    let oplus = op(f1,f2, true);
+    let op = op(f1.clone(),f2.clone());
+    
+    
+    let bool = same_vecs5model(op.clone(), con_models.clone());
+
     if debug{
+        println!("");
+        println!("ANALIZANDO {} y {}", f1, f2);
         println!("Oplus result >");
-        for m in &oplus {
-            println!("m = {:?}", m);
+        for m in &op {
+            println!("m = {}", m);
         }
         println!("Models >");
         for m in &con_models {
-            println!("m = {:?}", m);
+            println!("m = {}", m);
         }
+        println!("====> RESULT: {}", bool);
+
     }
-    let bool = same_models(oplus.clone(), con_models.clone());
     return bool;
 
 }

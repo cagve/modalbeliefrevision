@@ -1,48 +1,64 @@
 use std::collections::HashSet;
+use std::env;
 
 use distance::closest_set_pointed;
-use ::distance::hamming;
 use graphics::dot_distance;
+use operation::test_fn;
+use operation::theorem;
 use s5rust::parser::build_formula;
 use s5rust::modal::*;
 
 use crate::distance::closest_pointed_model;
 use crate::distance::min_distance;
-use crate::semantic::*; //TODO refactor name
+use crate::semantic::*; 
 use crate::revision::*;
 use crate::utils::*;
 mod distance;
+mod operation;
+mod update;
 mod semantic;
 mod revision;
 mod graphics;
 mod utils;
 
-fn test_formula(rev: Revision, f3:ModalFormula) -> bool{
+fn test_formula(output: Vec<S5PointedModel>, input: ModalFormula, f3:ModalFormula, universe: Vec<String>, debug:bool) -> bool{
+    if debug{println!("Debugging formula {}", f3);}
     let mut flag = true;
-    let remain = vect_difference(&rev.input_set, &rev.output);
-    for model in rev.output.clone()  {
+    let mut r1 = true;
+    let mut r2 = false;
+    let input_set = get_models(input, universe);
+    let remain = vec_difference(&input_set, &output);
+    if debug{println!("#> Cheking output models. {} should be true", f3);}
+    for model in output  {
         flag = check_pointed_model(&f3, &model);
-        println!("flag = {:?}", flag);
-        if !flag{
-            println!("{} * {} ⊬ {}", rev.phi, rev.mu, f3);
-            println!("model = {:?}", model);
-            break;
+        if debug{ 
+            if !flag {
+                r1 = flag;
+                println!("#>> {} => {:?}", model, flag); 
+            } else {
+                println!(" >> {} => {:?}", model, flag);
+            }
         }
     }
-    println!("====");
+    if debug{println!("#> Cheking input models but not in the result. {} should be false", f3);}
     let mut flag2 = false;
     for model in remain.clone()  {
         flag2 = check_pointed_model(&f3, &model);
-        println!("flag2 = {:?}", flag2);
-        if flag2 { //real
-        // if !flag2 { //prov para pobar que formula descarta que.
-            println!("model = {:?}", model);
+        if debug{ 
+            if flag2 {
+                r2 = flag2;
+                println!("#>> {} => {:?}", model, flag2); 
+            } else {
+                println!(" >> {} => {:?}", model, flag2);
+            }
         }
     }
 
-    if flag {
-        println!("{} * {} Ⱶ {}", rev.phi, rev.mu, f3);
-    }
+    // if r1 && !r2 {
+    //      println!("{} * {} ≡ {}", rev.phi, rev.mu, f3);
+    // }else{
+    //      println!("{} * {} ≢ {}", rev.phi, rev.mu, f3);
+    // }
     return flag;
 }
 
@@ -99,25 +115,96 @@ fn counterexample(){
 }
 
 fn main() {
-    let prop_set = generate_propset(2); 
-    let universe = generate_universe(prop_set.clone());
-    let mut f1: ModalFormula = build_formula("p and q").unwrap();
-    let mut fb: ModalFormula = build_formula("(not q) and (not p)").unwrap();
-    let mut f2: ModalFormula = build_formula("not q").unwrap();
-    let mut f3: ModalFormula = build_formula("not p").unwrap();
-    // let mut fa: ModalFormula = build_formula("(not (box(p implies q))) and (p implies q) and (").unwrap(); 
-    // let mut fb: ModalFormula = build_formula("(not (box(p implies q))) and (p implies q) and (q implies ((not (box((not q) implies p))) or (not (box (q implies (not p))))))").unwrap(); 
-    // let mut f3: ModalFormula = build_formula("(not q) and (diamond q) and ((diamond (p and not q)) implies (box(q or p))) and ((not (p or q)) implies (diamond (q and not p))) and ((p and (not q)) implies (diamond (p and q)))").unwrap(); THIS IS RESULT
+    let formulas1 = vec!["box(p and diamond(q)) implies diamond(p and box(q))".to_string(),
+    "diamond(p and box(q)) implies box(p implies diamond(q))".to_string(),
+    "box(p implies diamond(q)) and diamond(p or q)".to_string(),
+    "diamond(p and box(q)) implies box(diamond(p) implies q)".to_string(),
+    "box(diamond(p) implies diamond(q)) implies diamond(p implies box(q))".to_string(),
+    "diamond(box(p) and diamond(q)) implies box(diamond(p) implies q)".to_string(),
+    "box(p implies diamond(box(q))) and diamond(p and q)".to_string(),
+    "diamond(box(p implies q)) implies box(diamond(p implies q))".to_string(),
+    "box(diamond(p) and diamond(q)) implies diamond(p and q)".to_string(),
+    "diamond(p implies box(q)) implies box(p implies diamond(q))".to_string(),
+    ];
 
+    let formulas2 = vec![
+        "box(r) and diamond(r)".to_string(),
+        "diamond(r) implies box(r)".to_string(),
+        "box(r) implies diamond(r)".to_string(),
+        "diamond(r) and box(r)".to_string(),
+        "diamond(r or r)".to_string(),
+        "box(r and diamond(r))".to_string(),
+        "diamond(box(r))".to_string(),
+        "box(diamond(r))".to_string(),
+        "diamond(r) or box(r)".to_string(),
+        "box(r) implies diamond(box(r))".to_string(),
+    ];
 
-    let r1 = Revision::new(f1.clone(),fb.clone(),universe.clone());
-    let r2 = Revision::new(f1.clone(),f2.clone(),universe.clone());
-    let o1 = r1.output;
-    let o2 = iterated_rev(&r2, f3, universe);
-    println!("o1 = {:?}", o1);
-    println!("o2 = {:?}", o2);
-    let f = equiv_output(o1, o2);
-    println!("f = {:?}", f);
+    let f1 = "diamond p".to_string();
+    let f2 = "diamond q".to_string();
+    // theorem(f1, f2, true);
+    theorem(formulas1[0].to_string(), formulas2[1].to_string(), true);
+    //  for f1 in &formulas1 {
+    //     for f2 in &formulas2 {
+    //         theorem(f1.to_string(), f2.to_string(), true);
+    //     }
+    // }
+    // test_fn();
+
+    // let mut f1: ModalFormula = build_formula("(not q) and (diamond q) and (not p) and (diamond p)").unwrap();
+    // let mut f2: ModalFormula = build_formula("not p").unwrap();
+    // let mut f3: ModalFormula = build_formula("((p) and (diamond (not p))) and ((q) and (diamond (not q))) ").unwrap();
+    // let mut f3: ModalFormula = build_formula("(box p) and (diamond r) and (box q)").unwrap();
+    //
+    // let args: Vec<String> = env::args().collect();
+    // let atoms = vec![f1.get_atoms().len(), f2.get_atoms().len()];
+    // let mut num = *atoms.iter().max().unwrap();
+    // if args.len() > 1 {
+    //     let num_str = &args[1]; 
+    //     num = num_str.parse::<i32>().unwrap() as usize; 
+    // }
+    // let prop_set = generate_propset(num); 
+    // let universe = generate_universe(prop_set.clone());
+
+    // REVISION /////////////////////////////////////////////////////////////////////////
+    // let r1 = Revision::new(f1.clone(),f2.clone(),universe.clone());
+    // verbose_output(&r1);
+    // let output = r1.output;
+    
+    // UPDATE ///////////////////////////////////////////////////////////////////////////
+    // let update = Update::new(f1.clone(), f2.clone(), universe.clone());
+    // update.print_output();
+    // let output = update.output();
+
+    // TEST ///////////////////////////////////////////////////////////////////////////
+    // test_formula(output, f2.clone(), f3.clone(),universe, true);
+    // //
+    // let m = get_models(f1, universe);
+    // for i in &m{
+    //     println!("{}", i);
+    // }
+
+    // let m = get_models(f2, universe);
+    // println!("WANTED P_MODELS");
+    // for i in &m{
+    //     println!("{}", i);
+    // }
+    //
+    // println!("NO WANTED P_MODES");
+    // let d = vec_difference(&r1.input_set, &m);
+    // for i in d {
+    //     println!("{}", i);
+    // }
+    // verbose_output(&r1);
+    // test_formula(r1, f3);
+    // let r2 = Revision::new(f1.clone(),f2.clone(),universe.clone());
+    // verbose_output(&r1);
+    // let o2 = r1.output;
+    // let o2 = iterated_rev(&r2, f3, universe);
+    // println!("o1 = {:?}", o1);
+    // println!("o2 = {:?}", o2);
+    // let f = equiv_output(o1, o2);
+    // println!("f = {:?}", f);
 
 
     // // EXAMPLE 8

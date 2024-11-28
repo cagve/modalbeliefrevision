@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 use std::fmt;
 
+use std::fmt::write;
 use std::fs::File;
 use std::io::Write;
 
@@ -8,16 +9,28 @@ use s5rust::formula::Tree;
 use s5rust::parser::build_formula;
 use s5rust::modal::*;
 use s5rust::prop::PropBinary::*;
+use s5rust::prop::PropFormula;
 use crate::utils::*;
 use crate::distance::*;
 
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Debug, Clone, Eq, Ord, PartialOrd, Hash)]
 pub struct S5PointedModel {
     pub model: Vec<String>,
     pub world: String
 }
 
 impl S5PointedModel{
+    pub fn get_atoms(&self) -> String {
+        let mut atoms = Vec::new();
+        self.model.iter()
+            .for_each(|x| {
+                if x != ""{
+                    atoms.push(x.clone())
+                }
+            });
+        return remove_duplicates(atoms).concat().to_string();
+    }
+
     pub fn to_latex(&self) -> String{
         let mut n = 0;
         let mut tab = String::new();
@@ -63,7 +76,7 @@ impl S5PointedModel{
     } 
 
     pub fn print_order(&self, set:Vec<S5PointedModel>){
-        let order = pointed_model_order(&set, &self);
+        let order = create_pm_order(&set, &self);
         let mut order_distances:Vec<Lexicographic> = order.clone().iter().map(|x| x.distance.clone()).collect();
         // REMOVE DUPLICATES. vvvvvvvvvvvvvvvvvvvvvvv
         let mut seen = HashSet::new();
@@ -73,13 +86,20 @@ impl S5PointedModel{
         println!("Order over {} ", self);
         for distance in order_distances{
             let current_d = distance.clone(); 
-            let v = get_pointed_model_at_distance(&order, current_d);
+            let v = get_pm_at_distance(&order, current_d);
             println!("> D={}", distance);
             for model in v{
                 println!("  | Model = {}", model.pointed_model);
 
             }
         };
+    }
+}
+
+
+impl PartialEq for S5PointedModel {
+    fn eq(&self, other: &Self) -> bool {
+        return same_s5model(self, other);
     }
 }
 
@@ -107,6 +127,45 @@ impl fmt::Display for S5PointedModel {
 }
 
 
+pub fn check_prop_model(formula: &PropFormula, m: &String) -> bool{
+    match &formula.tree {
+        Tree::Binary { conn, left, right } => {
+            let term_left = build_formula(&left.to_string()).unwrap();
+            let term_right = build_formula(&right.to_string()).unwrap();
+            match conn {
+                Iff => {
+                    // println!("Iff");
+                    return check_prop_model(&term_left, m) == check_prop_model(&term_right, m);
+                },
+                Implies => {
+                    // println!("If");
+                    return !(check_prop_model(&term_left, m) && !check_prop_model(&term_right, m));
+                },
+                And => {
+                    // println!("And");
+                    return check_prop_model(&term_left, m) && check_prop_model(&term_right, m);
+                },
+                Or => {
+                    // println!("Or");
+                    return check_prop_model(&term_left, m) || check_prop_model(&term_right, m);
+                }
+            }
+        }
+        Tree::Unary { conn, next } => {
+            let term = build_formula(&next.to_string()).unwrap();
+            match conn {
+                s5rust::prop::PropUnary::Not => {
+                    // println!("Not");
+                    return !check_prop_model(&term, m);
+                }
+
+            }
+        }
+        Tree::Atom(_) => {
+            return m.contains(&formula.to_string())
+        }
+    }
+}
 
 pub fn check_pointed_model(formula: &ModalFormula, m: &S5PointedModel) -> bool{
     match &formula.tree {
@@ -173,6 +232,31 @@ pub fn check_pointed_model(formula: &ModalFormula, m: &S5PointedModel) -> bool{
     }
 }
 
+pub fn get_prop_models(formula:PropFormula, universe: &Vec<String>) -> Vec<String> {
+    let mut models:Vec<String> = Vec::new();
+    universe.iter()
+        .for_each(|val| {
+            if check_prop_model(&formula, val){
+                models.push(val.clone());
+            }
+        });
+    return models; }
+
+
+pub fn get_mmodels(formula: ModalFormula, universe:Vec<String>) -> Vec<Vec<String>>{
+    let s5_pointed_models = get_models(formula, universe);
+    let mut models = Vec::new();
+    s5_pointed_models.iter().for_each(|pm|{
+        models.push(pm.clone().model);
+    });
+    // REMOVE DUPLICATES. vvvvvvvvvvvvvvvvvvvvvvv
+    let mut seen = HashSet::new();
+    models.retain(|item| seen.insert(item.clone()));
+    // REMOVE DUPLCIATES ^^^^^^^^^^^^^^^^^^^^^^^^
+    return models;
+}
+
+
 pub fn get_models(formula: ModalFormula, universe:Vec<String>) -> Vec<S5PointedModel>{
     let s5_pointed_models = generate_all_poss_pointed(&universe);
     let mut s5_filtered:Vec<S5PointedModel> = Vec::new();
@@ -185,3 +269,4 @@ pub fn get_models(formula: ModalFormula, universe:Vec<String>) -> Vec<S5PointedM
         });
     return s5_filtered
 }
+

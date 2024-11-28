@@ -187,73 +187,11 @@ pub fn projection(vec1: &Vec<String>, P:&String ) -> Vec<String>{
 }
 
 
-pub fn same_vecs5model(vec1: Vec<S5PointedModel>, vec2: Vec<S5PointedModel>) -> bool{
-    if vec1.len() != vec2.len(){
-        return false
-    }
 
-    for m in vec1.clone() {
-        if !s5_contains(m, vec2.clone()){
-            return false;
-        }
-    }
-
-    for m in vec2 {
-        if !s5_contains(m, vec1.clone()){
-            return false;
-        }
-    }
-    return true
+pub fn same_set_pmodels(mut vec1: Vec<S5PointedModel>, mut vec2: Vec<S5PointedModel>) -> bool {
+    vec1.sort();
+    vec2.sort();
+    return vec1 == vec2;
 }
 
-pub fn same_s5model(s51: &S5PointedModel, s52: &S5PointedModel) -> bool{
-    let model_1 = s51.clone().model;
-    let model_2 = s52.clone().model;
-    let world_1 = s51.clone().world;
-    let world_2 = s52.clone().world;
-
-    let f1 = same_model(model_1, model_2);
-    let f2 = same_world(world_1, world_2);
-    return f1 && f2;
-}
-
-pub fn same_model(W: Vec<String>, U: Vec<String>) -> bool {
-    // Convertimos cada String a Vec<char>, ordenamos y comparamos.
-    let mut v1_chars: Vec<Vec<char>> = W.iter().map(|s| {
-        let mut chars: Vec<char> = s.chars().collect();
-        chars.sort();
-        chars
-    }).collect();
-
-    let mut v2_chars: Vec<Vec<char>> = U.iter().map(|s| {
-        let mut chars: Vec<char> = s.chars().collect();
-        chars.sort();
-        chars
-    }).collect();
-
-    // Ordenamos los vectores de caracteres.
-    v1_chars.sort();
-    v2_chars.sort();
-
-    // Comparamos los vectores resultantes.
-    v1_chars == v2_chars
-}
-
-
-pub fn same_world(w1: String, w2: String) -> bool {
-    let mut chars1: Vec<char> = w1.chars().collect();
-    let mut chars2: Vec<char> = w2.chars().collect();
-    chars1.sort();
-    chars2.sort();
-    chars1 == chars2
-}
-
-pub fn s5_contains(s5:S5PointedModel, vecs5:Vec<S5PointedModel>) -> bool{
-    for m in vecs5 {
-        if same_s5model(&s5, &m){
-            return true
-        }
-    }
-    return false;
-}
 

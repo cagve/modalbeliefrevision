@@ -4,18 +4,15 @@ use s5rust::modal::*;
 use s5rust::prop::*;
 use crate::semantic::S5PointedModel;
 
-use std::error::Error;
-use std::fs::File;
-use std::io::Write;
-
+#[derive(Clone)]
 pub struct DalalRevision {
     pub phi: PropFormula,
     pub mu: PropFormula,
     pub universe:Vec<String>,
-    pub base_set: Vec<S5PointedModel>,
-    pub input_set: Vec<S5PointedModel>,
-    pub output:Vec<S5PointedModel>,
-    pub distance:Lexicographic
+    pub base_set: Vec<String>,
+    pub input_set: Vec<String>,
+    pub output:Vec<String>,
+    pub distance:i32
 }
 
 
@@ -30,7 +27,6 @@ pub struct Revision {
     pub output:Vec<S5PointedModel>,
     pub distance:Lexicographic
 }
-
 
 
 impl Revision {
@@ -151,7 +147,8 @@ impl Revision {
                 println!("Input models: {}", self.input_set.len());
                 self.input_set.iter().for_each(|x| {
                     let d = min_distance(&self.base_set, x);
-                    println!("{} > {}", x, d)
+                    let m = closest_pointed_model(&self.base_set, x);
+                    println!("{} at distance {} from model: {}", x, d, m)
                 })
             },
             "debug"     => {
