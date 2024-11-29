@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use s5rust::{modal::ModalFormula, parser::build_formula};
-use crate::{get_atoms_from_fromula, power_set, remove_duplicates, s5_contains, same_model, same_models, same_s5model, same_vecs5model, vec_union, S5PointedModel};
+use crate::{check_pointed_model, get_atoms_from_fromula, power_set, remove_duplicates, s5_contains, s5veceq, vec_difference, vec_symdiffs5, vec_symmdiff, vec_union, S5PointedModel};
 use crate::get_universe_from_formula;
 use crate::get_models;
 use crate::generate_universe;
@@ -27,10 +27,11 @@ fn projection_model(model: &Vec<String>, voc: &String) -> Vec<String>{
 }
 
 fn projection_pointed(pointed:&S5PointedModel, voc:&String) -> S5PointedModel{
-    let s5pm = S5PointedModel {
+    let mut s5pm = S5PointedModel {
         model: projection_model(&pointed.model, &voc),
         world: projection_w(&pointed.world, &voc)
     };
+    s5pm.sort();
     return s5pm
 }
 
@@ -82,7 +83,9 @@ pub fn generate_Z(pm1:Vec<S5PointedModel>, pm2: Vec<S5PointedModel>, voc1:Vec<St
             let world = world_vec.concat();
             let model = modelo.clone();
             if model.contains(&world){
-                pmodels.push(S5PointedModel{model,world});
+                let mut s5 = S5PointedModel{model, world};
+                s5.sort();
+                pmodels.push(s5);
             }
         }
     }
@@ -95,16 +98,6 @@ pub fn generate_Z(pm1:Vec<S5PointedModel>, pm2: Vec<S5PointedModel>, voc1:Vec<St
 pub fn oplus(pm1:Vec<S5PointedModel>, pm2: Vec<S5PointedModel>, voc1:Vec<String>, voc2:Vec<String>) -> Vec<S5PointedModel>{
     let z = generate_Z(pm1.clone(), pm2.clone(), voc1.clone(), voc2.clone());
 
-    // let mut voc1 = Vec::new();
-    // pm1.iter() 
-    //     .for_each(|x| voc1.push(x.get_atoms()));
-    // voc1 = remove_duplicates(voc1);
-
-    // let mut voc2 = Vec::new();
-    // pm2.iter() 
-    //     .for_each(|x| voc2.push(x.get_atoms()));
-    // voc2 = remove_duplicates(voc2);
-
     let mut filtered = Vec::new();
     for w in z {
             let projection_1 = projection_pointed(&w, &voc1.concat());
@@ -113,7 +106,7 @@ pub fn oplus(pm1:Vec<S5PointedModel>, pm2: Vec<S5PointedModel>, voc1:Vec<String>
             // println!("Model = {}", w);
             // println!("> projection_1 = {}", projection_1);
             // println!("> projection_2 = {}", projection_2);
-            if s5_contains(projection_1, pm1.clone()) && s5_contains(projection_2, pm2.clone()){
+            if s5_contains(projection_1, &pm1) &&  s5_contains(projection_2, &pm2){
                     filtered.push(w.clone());
             }
     };
@@ -138,17 +131,23 @@ pub fn op(phi:ModalFormula, psi:ModalFormula) -> Vec<S5PointedModel> {
 
 
 pub fn test_fn(){
-    let W = vec!["pq".to_string(), "q".to_string()];
-    let U = vec!["qp".to_string(), "q".to_string()];
+    let W = vec!["qp".to_string(), "q".to_string()];
+    let U = vec!["qp".to_string(), "q".to_string(), "rqp".to_string()];
+    let V = vec!["pq".to_string(), "q".to_string()];
 
-    let s51 = S5PointedModel{
+    let mut s51 = S5PointedModel{
         model: W.clone(),
-        world: "q".to_string()
+        world: "qp".to_string()
     };
 
     let s52 = S5PointedModel{
         model: U.clone(),
-        world: "q".to_string()
+        world: "qp".to_string()
+    };
+
+    let s53 = S5PointedModel{
+        model: V.clone(),
+        world: "p".to_string()
     };
 
     // let Z = generate_Z(vec![s51], vec![s52]);
@@ -158,21 +157,24 @@ pub fn test_fn(){
     //     println!("PModel {}", idx);
     //     println!(" > {} ", pm);
     // }
-    let s1 = vec![s51.clone()];
-    let s2 = vec![s52.clone()];
-    let r = same_vecs5model(s2.clone(), s1.clone());
-    let f = s5_contains(s51.clone(), s2);
-    let v = same_s5model(&s51, &s52);
-    let z = same_model(W, U);
+    let s1 = vec![s51.clone(), s52.clone(), s53.clone() ];
+    let s2 = vec![s52.clone(), s51.clone(), s52.clone()];
+    let s3 = vec![s53.clone()];
+    let r = s5veceq(&s1, &s2);
     println!("r = {:?}", r);
-    println!("f = {:?}", f);
-    println!("v = {:?}", v);
-    println!("z = {:?}", z);
+    // let f = s5_contains(s51.clone(), s2);
+    // let v = same_s5model(&s51, &s52);
+    // let z = same_model(W, U);
+    // println!("r = {:?}", r);
+    // println!("f = {:?}", f);
+    // println!("v = {:?}", v);
+    // println!("z = {:?}", z);
 }
 
-pub fn theorem(fstr1:String, fstr2:String, debug:bool) -> bool{
+pub fn theorem(fstr1:String, fstr2:String, fstr3:String, debug:bool) -> bool{
     let f1: ModalFormula = build_formula(&fstr1).unwrap();
     let f2: ModalFormula = build_formula(&fstr2).unwrap();
+    let f3: ModalFormula = build_formula(&fstr3).unwrap();
     let con:ModalFormula = build_formula(&format!("({}) and ({})", fstr1, fstr2)).unwrap();
 
 
@@ -182,23 +184,50 @@ pub fn theorem(fstr1:String, fstr2:String, debug:bool) -> bool{
     let op = op(f1.clone(),f2.clone());
     
     
-    let bool = same_vecs5model(op.clone(), con_models.clone());
+    let bool = s5veceq(&op, &con_models);
 
     if debug{
         println!("");
         println!("ANALIZANDO {} y {}", f1, f2);
-        println!("Oplus result >");
-        for m in &op {
-            println!("m = {}", m);
-        }
-        println!("Models >");
-        for m in &con_models {
-            println!("m = {}", m);
-        }
-        println!("====> RESULT: {}", bool);
-
+        debug_example(f1, f2, f3);
+        // println!("Oplus result >");
+        // for m in &op {
+        //     println!("m = {}", m);
+        // }
+        // println!("Models >");
+        // for m in &con_models {
+        //     println!("m = {}", m);
+        // }
+        // println!("====> RESULT: {}", bool);
     }
     return bool;
 
 }
 
+
+pub fn debug_example(phi:ModalFormula, psi:ModalFormula, mu:ModalFormula) {
+    let universe_phi = get_universe_from_formula(&phi);
+    let universe_psi = get_universe_from_formula(&psi);
+    let universe_mu = get_universe_from_formula(&mu);
+
+    let pmmodels_phi = get_models(phi.clone(), universe_phi);
+    let pmmodels_psi = get_models(psi.clone(), universe_psi);
+    let voc1 = get_atoms_from_fromula(&phi);
+    let voc2 = get_atoms_from_fromula(&psi);
+
+    let o = oplus(pmmodels_phi, pmmodels_psi, voc1, voc2);
+    for m in o{
+        println!("");
+        println!("Model {}", m);
+        let f = check_pointed_model(&mu, &m);
+        println!(">> model of {}? {}",mu, f);
+    }
+    let x = get_models(mu.clone(), universe_mu);
+    for m in x{
+        println!("");
+        println!("Model {}", m);
+        let f = check_pointed_model(&mu, &m);
+        println!(">> model of {}? {}",mu, f);
+    }
+    
+}

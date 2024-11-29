@@ -66,6 +66,18 @@ pub fn vec_symmdiff(v1: &Vec<String>, v2: &Vec<String>) -> Vec<String> {
     return intersection;
 }
 
+pub fn vec_symdiffs5(v1: &Vec<S5PointedModel>, v2: &Vec<S5PointedModel>) -> Vec<S5PointedModel> {
+    let mut v1clone = v1.clone();
+    let mut v2clone = v2.clone();
+    v1clone.sort();
+    v2clone.sort();
+
+    let s1: HashSet<S5PointedModel> = v1clone.iter().cloned().collect();
+    let s2: HashSet<S5PointedModel> = v2clone.iter().cloned().collect();
+    let intersection = s1.symmetric_difference(&s2).into_iter().cloned().collect();
+    return intersection;
+}
+
 pub fn vec_difference(v1: &Vec<S5PointedModel>, v2: &Vec<S5PointedModel>) -> Vec<S5PointedModel> {
     let s1: HashSet<S5PointedModel> = v1.iter().cloned().collect();
     let s2: HashSet<S5PointedModel> = v2.iter().cloned().collect();
@@ -187,69 +199,25 @@ pub fn projection(vec1: &Vec<String>, P:&String ) -> Vec<String>{
 }
 
 
-pub fn same_vecs5model(vec1: Vec<S5PointedModel>, vec2: Vec<S5PointedModel>) -> bool{
-    if vec1.len() != vec2.len(){
-        return false
-    }
-
-    for m in vec1.clone() {
-        if !s5_contains(m, vec2.clone()){
-            return false;
-        }
-    }
-
-    for m in vec2 {
-        if !s5_contains(m, vec1.clone()){
-            return false;
-        }
-    }
-    return true
-}
 
 pub fn same_s5model(s51: &S5PointedModel, s52: &S5PointedModel) -> bool{
-    let model_1 = s51.clone().model;
-    let model_2 = s52.clone().model;
-    let world_1 = s51.clone().world;
-    let world_2 = s52.clone().world;
+    let mut s1 = s51.clone();
+    let mut s2 = s52.clone();
+    s1.sort();
+    s2.sort();
 
-    let f1 = same_model(model_1, model_2);
-    let f2 = same_world(world_1, world_2);
+    let f1 = s1.model == s2.model;
+    let f2 = s1.world == s2.world;
     return f1 && f2;
 }
 
-pub fn same_model(W: Vec<String>, U: Vec<String>) -> bool {
-    // Convertimos cada String a Vec<char>, ordenamos y comparamos.
-    let mut v1_chars: Vec<Vec<char>> = W.iter().map(|s| {
-        let mut chars: Vec<char> = s.chars().collect();
-        chars.sort();
-        chars
-    }).collect();
-
-    let mut v2_chars: Vec<Vec<char>> = U.iter().map(|s| {
-        let mut chars: Vec<char> = s.chars().collect();
-        chars.sort();
-        chars
-    }).collect();
-
-    // Ordenamos los vectores de caracteres.
-    v1_chars.sort();
-    v2_chars.sort();
-
-    // Comparamos los vectores resultantes.
-    v1_chars == v2_chars
-}
-
-
-pub fn same_world(w1: String, w2: String) -> bool {
-    let mut chars1: Vec<char> = w1.chars().collect();
-    let mut chars2: Vec<char> = w2.chars().collect();
-    chars1.sort();
-    chars2.sort();
-    chars1 == chars2
-}
-
-pub fn s5_contains(s5:S5PointedModel, vecs5:Vec<S5PointedModel>) -> bool{
-    for m in vecs5 {
+pub fn s5_contains(mut s5:S5PointedModel, vecs5:&Vec<S5PointedModel>) -> bool{
+    let mut copy = vecs5.clone();
+    copy.iter_mut()
+        .for_each(|x| 
+                 x.sort());
+    s5.sort();
+    for m in copy {
         if same_s5model(&s5, &m){
             return true
         }
@@ -257,3 +225,31 @@ pub fn s5_contains(s5:S5PointedModel, vecs5:Vec<S5PointedModel>) -> bool{
     return false;
 }
 
+pub fn s5veceq(vec1:&Vec<S5PointedModel>, vec2:&Vec<S5PointedModel>) -> bool{
+    if vec1.len() != vec2.len(){
+        return false
+    }
+    let mut flag1=false;
+    let mut flag2=false;
+
+    for s5 in vec1 {
+        flag1 = s5_contains(s5.clone(), &vec2);
+        if flag1 == true{
+            break;
+        }
+    }
+    for s5 in vec2 {
+        flag2 = s5_contains(s5.clone(), &vec1);
+        if flag2 == true{
+            break;
+        }
+    }
+    return flag1 && flag2;
+}
+
+pub fn sort_string(str: String) -> String{
+    let mut l: Vec<char> = str.chars().collect();
+    l.sort();
+    let j: String = l.into_iter().collect();
+    return j;
+}

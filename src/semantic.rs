@@ -31,6 +31,25 @@ impl S5PointedModel{
         return remove_duplicates(atoms).concat().to_string();
     }
 
+    pub fn new(model: Vec<String>, world: String) -> Self {
+        let mut s5 = S5PointedModel { model, world };
+        s5.sort();
+        return s5;
+    }
+
+    pub fn sort(&mut self) {
+        // Sorting string in models.
+        self.model = self.model.iter()
+            .map(|valuation| {
+                let new_valuation = sort_string(valuation.to_string());
+                return new_valuation;
+            })
+        .collect();
+        self.model.sort();
+        self.world = sort_string(self.world.clone());
+    }
+
+
     pub fn to_latex(&self) -> String{
         let mut n = 0;
         let mut tab = String::new();
@@ -99,7 +118,14 @@ impl S5PointedModel{
 
 impl PartialEq for S5PointedModel {
     fn eq(&self, other: &Self) -> bool {
-        return same_s5model(self, other);
+        let mut s1 = self.clone();
+        let mut s2 = other.clone();
+        s1.sort();
+        s2.sort();
+
+        let f1 = s1.model == s2.model;
+        let f2 = s1.world == s2.world;
+        return f1 && f2;
     }
 }
 
@@ -258,7 +284,8 @@ pub fn get_mmodels(formula: ModalFormula, universe:Vec<String>) -> Vec<Vec<Strin
 
 
 pub fn get_models(formula: ModalFormula, universe:Vec<String>) -> Vec<S5PointedModel>{
-    let s5_pointed_models = generate_all_poss_pointed(&universe);
+    let mut s5_pointed_models = generate_all_poss_pointed(&universe);
+    s5_pointed_models.sort();
     let mut s5_filtered:Vec<S5PointedModel> = Vec::new();
     s5_pointed_models.iter()
         .for_each(|pointed| {
@@ -267,6 +294,9 @@ pub fn get_models(formula: ModalFormula, universe:Vec<String>) -> Vec<S5PointedM
                 s5_filtered.push(pointed.clone());
             }
         });
+    s5_filtered.sort();
     return s5_filtered
 }
+
+
 

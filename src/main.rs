@@ -140,17 +140,30 @@ fn main() {
         "box(r) implies diamond(box(r))".to_string(),
     ];
 
-    let f1 = "diamond p".to_string();
-    let f2 = "diamond q".to_string();
-    // theorem(f1, f2, true);
-    theorem(formulas1[0].to_string(), formulas2[1].to_string(), true);
-    //  for f1 in &formulas1 {
-    //     for f2 in &formulas2 {
-    //         theorem(f1.to_string(), f2.to_string(), true);
+
+
+    // let f1 = "box(p and diamond(q)) implies diamond(p and box(q))".to_string();
+    // let f2 = "(box r) implies (diamond r) ".to_string();
+    let f1 = "(box p) implies (box q)".to_string();
+    let f2 = "(box r) or (box not r)".to_string();
+    let f3 = "((box p) implies (box q)) and ((box r) or (box (not r)))".to_string();
+    let t = theorem(f1.to_string(), f2.to_string(), f3.to_string(), true);
+    println!("RESULT = {}", t);
+
+    // let mut flag = true;
+    // for f1 in &formulas1 {
+    //     if flag{
+    //         for f2 in &formulas2 {
+    //             flag = theorem(f1.to_string(), f2.to_string(), false);
+    //             if !flag{
+    //                 println!(">>>>>> Debuggin result <<<<<<<", );
+    //                 println!("phi = {}", f1);
+    //                 println!("psi = {}", f2);
+    //                 break;
+    //             }
+    //         }
     //     }
     // }
-    // test_fn();
-
     // let mut f1: ModalFormula = build_formula("(not q) and (diamond q) and (not p) and (diamond p)").unwrap();
     // let mut f2: ModalFormula = build_formula("not p").unwrap();
     // let mut f3: ModalFormula = build_formula("((p) and (diamond (not p))) and ((q) and (diamond (not q))) ").unwrap();
