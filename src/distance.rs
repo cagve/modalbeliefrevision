@@ -2,7 +2,7 @@ use core::f64;
 use std::{cmp::{self, Ordering}, collections::HashSet, fmt::{self, write}};
 use ordered_float::OrderedFloat;
 
-use crate::{semantic::S5PointedModel, subset, vec_difference, vec_difference_str, vec_intersection, vec_symmdiff, vec_union};
+use crate::{semantic::S5PointedModel, utils::{difference, intersection, symmetric_difference}, Valuation};
 
 
 #[derive(Debug, Clone, Hash)]
@@ -40,7 +40,7 @@ impl Ord for Lexicographic {
     }
 }
 
-#[derive(Debug,Clone, Hash)]
+#[derive(Debug,Clone)]
 pub struct PointedModelDistance {
     pub distance: Lexicographic,
     pub pointed_model: S5PointedModel,
@@ -74,10 +74,10 @@ impl fmt::Display for PointedModelDistance {
 }
 
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct ModelDistance {
     distance: OrderedFloat<f64>,
-    model: Vec<String>,
+    model: HashSet<Valuation>,
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -86,42 +86,24 @@ pub struct WorldDistance {
     world: String,
 }
 
-/// Create an ordered list of worlds based on their Hamming distances to a target world.
-///
-/// This function takes a set of string representations of worlds and the target world itself,
-/// and returns a vector of `WorldDistance` structs, where each struct contains two fields:
-/// `world` (the world itself) and `distance` (the Hamming distance between the world and the target world).
-///
-/// The resulting vector is sorted in ascending order based on the distances.
-///
-/// # Parameters
-///
-/// * `set`: A reference to a vector of strings, where each string represents a world.
-/// * `world`: A string representing the target world.
-///
-/// # Return Value
-///
-/// A vector of `WorldDistance` structs, where each struct contains two fields: `world` and `distance`.
-pub fn create_w_order(world_set: &Vec<String>, world:&str) -> Vec<WorldDistance>{
+pub fn create_w_order(world_set: &HashSet<Valuation>, world:&str) -> Vec<WorldDistance>{
     let mut order: Vec<WorldDistance> = world_set.iter()
         .map(|s| WorldDistance {
             world: s.clone(),
             distance: hamming_distance(&s, world),
         })
     .collect();
-    order.sort();
     return order;
 }
 
 // Given a set of sets, and a set, return the order.
-pub fn create_m_order(model_set: &Vec<Vec<String>>, world_set: &Vec<String>) -> Vec<ModelDistance>{
+pub fn create_m_order(model_set: &Vec<HashSet<Valuation>>, world_set: &HashSet<Valuation>) -> Vec<ModelDistance>{
     let mut order: Vec<ModelDistance> = model_set.iter()
         .map(|s| ModelDistance {
             model: s.clone(),
             distance: distance_model_to_model(&s, world_set),
         })
     .collect();
-    order.sort();
     return order;
 }
 
@@ -137,7 +119,6 @@ pub fn create_pm_order(pm_set: &Vec<S5PointedModel>, pointed_model: &S5PointedMo
             return p;
         })
     .collect();
-    order.sort();
     return order;
 }
 
@@ -167,7 +148,7 @@ pub fn minimal_set_of_pointed_model(set: &Vec<S5PointedModel>, reference: &S5Poi
 }
 
 // Return the closest world
-pub fn closest_world(points: &Vec<String>, world: &str) -> String {
+pub fn closest_world(points: &HashSet<Valuation>, world: &str) -> String {
     let order = create_w_order(points, world);
     let closest_world = order.first().unwrap().world.clone();
     return closest_world;
@@ -183,7 +164,7 @@ pub fn closest_pointed_model(set: &Vec<S5PointedModel>, reference: &S5PointedMod
 
 
 // Return the closest model.
-fn closest_model(set_models: &Vec<Vec<String>>, set_of_worlds: &Vec<String>) -> Vec<String>{
+fn closest_model(set_models: &Vec<HashSet<Valuation>>, set_of_worlds: &HashSet<Valuation>) -> HashSet<Valuation>{
     let order = create_m_order(set_models, set_of_worlds);
     let closest_model = order.first().unwrap().model.clone();
     return closest_model;
@@ -191,19 +172,19 @@ fn closest_model(set_models: &Vec<Vec<String>>, set_of_worlds: &Vec<String>) -> 
 
 
 // Return the distance from a model to the closest model from a set of model.
-pub fn distance_set_models_to_model(set_models: &Vec<Vec<String>>, model: &Vec<String>) -> OrderedFloat<f64>{
+pub fn distance_set_models_to_model(set_models: &Vec<HashSet<Valuation>>, model: &HashSet<Valuation>) -> OrderedFloat<f64>{
     let closest_model = closest_model(set_models, model);
     return distance_model_to_model(&closest_model, model);
 }
 
 
 // Given a set of world and a world, return the distance to the closest point
-pub fn distance_model_to_world(set_of_worlds: &Vec<String>, world: &str) -> usize {
+pub fn distance_model_to_world(set_of_worlds: &HashSet<Valuation>, world: &str) -> usize {
     let closest_world = closest_world(set_of_worlds, world);
     return hamming_distance(&closest_world, world);
 }
 
-fn directed_hausdorff_distance(vec1: &Vec<String>, vec2: &Vec<String>) -> usize {
+fn directed_hausdorff_distance(vec1: &HashSet<Valuation>, vec2: &HashSet<Valuation>) -> usize {
     let mut v = Vec::new();
     vec1.iter()
         .for_each(|s1|{
@@ -216,7 +197,7 @@ fn directed_hausdorff_distance(vec1: &Vec<String>, vec2: &Vec<String>) -> usize 
         .unwrap().clone();
 }
 
-fn hausdorff_distance(vec1: &Vec<String>, vec2: &Vec<String>) -> usize {
+fn hausdorff_distance(vec1: &HashSet<Valuation>, vec2: &HashSet<Valuation>) -> usize {
     cmp::max(
         directed_hausdorff_distance(vec1, vec2),
         directed_hausdorff_distance(vec2, vec1),
@@ -224,7 +205,7 @@ fn hausdorff_distance(vec1: &Vec<String>, vec2: &Vec<String>) -> usize {
 }
 
 // Return distance between models
-pub fn distance_model_to_model(model1: &Vec<String>, model2: &Vec<String>)-> OrderedFloat<f64>{
+pub fn distance_model_to_model(model1: &HashSet<Valuation>, model2: &HashSet<Valuation>)-> OrderedFloat<f64>{
     let mut d = OrderedFloat(0.0);
     let drastic = false;
     let hausdorf = false;
@@ -235,10 +216,10 @@ pub fn distance_model_to_model(model1: &Vec<String>, model2: &Vec<String>)-> Ord
     }
     if drastic{
         if model1 != model2{ //A=0
-            let penalty = vec_intersection(model1, model2).len() == 0;
-            let m1 = vec_difference_str(model1,model2);
-            let m2 = vec_difference_str(model2,model1);
-            let symdiff = vec_symmdiff(model1, model2);
+            let penalty = intersection(model1, model2).len() == 0;
+            let m1 = difference(model1,model2);
+            let m2 = difference(model2,model1);
+            let symdiff = symmetric_difference(model1, model2);
             let sym = OrderedFloat(symdiff.len() as f64);
             let mut dis = OrderedFloat(0.0);
             m2.iter().for_each(|ele| {
@@ -266,7 +247,7 @@ pub fn distance_model_to_model(model1: &Vec<String>, model2: &Vec<String>)-> Ord
     return d;
 }
 
-// Return the hamnming distance between two worlds.
+// // Return the hamnming distance between two worlds.
 pub fn hamming_distance(world1: &str, world2: &str) -> usize {
     // Create sets of characters for each string
     let set1: HashSet<_> = world1.chars().collect();
@@ -312,20 +293,12 @@ pub fn closest_set_pointed(base: &Vec<S5PointedModel>, input: &Vec<S5PointedMode
         .map(|x| x.clone())
         .collect::<Vec<S5PointedModel>>();
 
-    // REMOVE DUPLICATES. vvvvvvvvvvvvvvvvvvvvvvv
-    let mut seen = HashSet::new();
-    result.retain(|item| seen.insert(item.clone()));
-    // REMOVE DUPLCIATES ^^^^^^^^^^^^^^^^^^^^^^^^
     return result;
 }
 
 pub fn get_base_closest_set(base: &Vec<S5PointedModel>, input: &Vec<S5PointedModel>) -> Vec<S5PointedModel>{
     let mut result = Vec::new();
     input.iter().for_each(|x| result.push(closest_pointed_model(base, x)));
-    // REMOVE DUPLICATES. vvvvvvvvvvvvvvvvvvvvvvv
-    let mut seen = HashSet::new();
-    result.retain(|item| seen.insert(item.clone()));
-    // REMOVE DUPLCIATES ^^^^^^^^^^^^^^^^^^^^^^^^
     return result;
 }
 

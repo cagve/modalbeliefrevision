@@ -126,16 +126,9 @@ impl S5PointedModel{
         //     }
         // };
     }
-    pub fn contained(&self, set:&Vec<S5PointedModel>) -> bool{
-        let mut flag = false;
-        for s5model in set{
-            println!("{} = {}?", s5model, self);
-            if s5model.clone() == self.clone(){
-                flag = true;
-                break;
-            }
-        }
-        return flag;
+    pub fn contained(&self, set:Vec<S5PointedModel>) -> bool{
+        let flag = false;
+        set.
     }
 }
 
