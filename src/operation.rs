@@ -1,14 +1,17 @@
 use std::{collections::HashSet, hash::Hash};
 use s5rust::{modal::ModalFormula, parser::build_formula};
 
-use crate::{get_phi_models, utils::{generate_valuations, get_atoms_from_fromula, powerset, powerset_hash, s5veceq, union}, S5PointedModel, Valuation};
+use crate::{get_phi_models, revision::{self, Revision}, utils::{generate_valuations, get_atoms_from_fromula, is_subset, powerset, powerset_hash, s5veceq, union}, S5PointedModel, Valuation};
 
 fn projection_w(world: &String, voc: &String) -> String{
     let set_voc: HashSet<char> = voc.chars().collect();
     let val_voc: HashSet<char> = world.chars().collect();
     let common_chars: HashSet<char> = set_voc.intersection(&val_voc).cloned().collect();
-    let str = common_chars.into_iter().collect();
-    return str;
+    let str:String = common_chars.into_iter().collect();
+    let mut sorted_valuation: Vec<char> = str.chars().collect();
+    sorted_valuation.sort();
+    let result:String = sorted_valuation.into_iter().collect();
+    return result;
 }
 
 
@@ -43,46 +46,36 @@ pub fn circ(valset1: &HashSet<Valuation>, valset2: &HashSet<Valuation>) -> HashS
                 result.insert(temp); // Concatenate w and u
             }
         }
+
     }
     return result;
 }
 
 
-pub fn generate_z(pm1:Vec<S5PointedModel>, pm2: Vec<S5PointedModel>, voc1:&String, voc2:&String) -> Vec<S5PointedModel>{
+pub fn generate_z(voc1:&String, voc2:&String) -> Vec<S5PointedModel>{
     let uni1:HashSet<Valuation> = generate_valuations(&voc1).into_iter().collect();
     let uni2:HashSet<Valuation> = generate_valuations(&voc2).into_iter().collect();
 
+    let mut owned_string: String = voc1.to_owned();
+    let borrowed_string: &str = voc2;
+    owned_string.push_str(borrowed_string);
 
     // Genero el conjunto de modelos de Z 
-    let op_models = circ(&uni1, &uni2);
-    let op_vec:Vec<_> = op_models.into_iter().collect();        // VECTOR
+    let op_models2 = circ(&uni1, &uni2);
+    let op_models = generate_valuations(&owned_string);
+    let op_vec:Vec<_> = op_models.clone().into_iter().collect();        // VECTOR
     let models_vec = powerset(&op_vec);                         // VECTOR
-    let models_z = models_vec.iter()                     // Vec of Hash [{"p", ""}, {"q"}]
+    let models_z = models_vec.iter()                            // Vec of Hash [{"p", ""}, {"q"}]
         .map(|x| {
             let hash:HashSet<_> = x.into_iter().collect();  
             return hash;
         })
         .collect::<Vec<_>>();
-    
-   // Genero el conjunto de mundos de Z 
-    let mut set: HashSet<Valuation> = HashSet::new();
-    voc1.chars().for_each(|c| { set.insert(c.to_string()); });
-    voc2.chars().for_each(|c| { set.insert(c.to_string()); });
-    let mut union: Vec<Valuation> = set.into_iter().collect();
-    let worlds_vec  = powerset(&union);               
-    let worlds_z = worlds_vec.iter()                     // Vec of Hash [{"p", ""}, {"q"}]
-        .map(|x| {
-            let world = x.concat();
-            return world;
-        })
-        .collect::<Vec<_>>();
-    println!("{:?}", models_z);
-    println!("{:?}", worlds_z);
 
 
     let mut pmodels = Vec::new();
     for model in models_z {
-        for world in worlds_z.clone() {
+        for world in op_models.clone() {
             if model.contains(&world){
                 let m = model.iter().map(|x| x.to_string()).collect();
                 let s5 = S5PointedModel::new(m, world);
@@ -96,7 +89,7 @@ pub fn generate_z(pm1:Vec<S5PointedModel>, pm2: Vec<S5PointedModel>, voc1:&Strin
 }
 
 pub fn oplus(set1:Vec<S5PointedModel>, set2: Vec<S5PointedModel>, voc1:String, voc2:String) -> Vec<S5PointedModel>{
-    let z = generate_z(set1.clone(), set2.clone(), &voc1, &voc2);
+    let z = generate_z(&voc1, &voc2);
 
     let mut filtered = Vec::new();
     for w in z {
@@ -106,8 +99,10 @@ pub fn oplus(set1:Vec<S5PointedModel>, set2: Vec<S5PointedModel>, voc1:String, v
             // println!("Model = {}", w);
             // println!("> projection_1 = {}", projection_1);
             // println!("> projection_2 = {}", projection_2);
-            if projection_1.contained(&set1) &&  projection_2.contained(&set2){
-                    filtered.push(w.clone());
+            let flag1 = projection_1.contained(&set1);
+            let flag2 = projection_2.contained(&set2);
+            if flag1&&flag2 {
+                filtered.push(w.clone());
             }
     };
 
@@ -183,6 +178,7 @@ pub fn theorem(fstr1:String, fstr2:String, fstr3:String, debug:bool) -> bool{
     let con_models = get_phi_models(&con, &universe_con);
 
     let op = op(f1.clone(),f2.clone());
+    println!("OPERATION");
     
     
     let bool = s5veceq(&op, &con_models);
@@ -190,7 +186,7 @@ pub fn theorem(fstr1:String, fstr2:String, fstr3:String, debug:bool) -> bool{
     if debug{
         println!("");
         println!("ANALIZANDO {} y {}", f1, f2);
-        println!("Oplus result >");
+        println!("Oplus result > {}", op.len());
         for m in &op {
             println!("m = {}", m);
         }
@@ -203,31 +199,95 @@ pub fn theorem(fstr1:String, fstr2:String, fstr3:String, debug:bool) -> bool{
     return bool;
 
 }
-//
-//
-// pub fn debug_example(phi:ModalFormula, psi:ModalFormula, mu:ModalFormula) {
-//     let universe_phi = get_universe_from_formula(&phi);
-//     let universe_psi = get_universe_from_formula(&psi);
-//     let universe_mu = get_universe_from_formula(&mu);
-//
-//     let pmmodels_phi = get_models(phi.clone(), universe_phi);
-//     let pmmodels_psi = get_models(psi.clone(), universe_psi);
-//     let voc1 = get_atoms_from_fromula(&phi);
-//     let voc2 = get_atoms_from_fromula(&psi);
-//
-//     let o = oplus(pmmodels_phi, pmmodels_psi, voc1, voc2);
-//     for m in o{
-//         println!("");
-//         println!("Model {}", m);
-//         let f = check_pointed_model(&mu, &m);
-//         println!(">> model of {}? {}",mu, f);
-//     }
-//     let x = get_models(mu.clone(), universe_mu);
-//     for m in x{
-//         println!("");
-//         println!("Model {}", m);
-//         let f = check_pointed_model(&mu, &m);
-//         println!(">> model of {}? {}",mu, f);
-//     }
-//     
-// }
+
+pub fn theorem_revision(fstr1:String, fstr2:String, fstr3:String, debug:bool) -> bool{
+    let phi: ModalFormula = build_formula(&fstr1).unwrap();
+    let mu: ModalFormula = build_formula(&fstr2).unwrap();
+    let psi: ModalFormula = build_formula(&fstr3).unwrap();
+    let con:ModalFormula = build_formula(&format!("({}) and ({})", fstr1, fstr3)).unwrap();
+    println!("phi = {}", phi);
+    println!("psi = {}", psi);
+    println!("con = {}", con);
+    println!("mu = {}", mu);
+
+    let atoms_phi = get_atoms_from_fromula(&phi);
+    let universe_phi = generate_valuations(&atoms_phi);
+    // let models_phi = get_phi_models(&phi, &universe_phi);
+    println!("PHI");
+
+    let atoms_psi = get_atoms_from_fromula(&psi);
+    let universe_psi = generate_valuations(&atoms_psi);
+    let models_psi = get_phi_models(&psi, &universe_psi);
+    println!("PSI");
+
+
+    
+    let atoms_con = format!("{}{}", atoms_psi, atoms_phi);
+    let universe_con = generate_valuations(&atoms_con);
+    let m = get_phi_models(&con, &universe_con);
+    println!("CON");
+
+    
+
+    let revision = Revision::new(con.clone(),mu.clone(),universe_con.clone());
+    let ou1 = revision.clone().output;
+
+    let revision2 = Revision::new(phi.clone(),mu.clone(),universe_phi.clone());
+    let ou2 = revision2.output;
+
+    println!("ou2 = {:?}", ou2);
+    println!("models_psi = {:?}", models_psi);
+
+    
+    println!("atoms_psi = {:?}", atoms_psi);
+    println!("atoms_phi = {:?}", atoms_phi);
+    println!("atoms_con = {:?}", atoms_phi);
+    let oplus = oplus(ou2.clone(), models_psi, atoms_phi, atoms_psi);
+
+    let result = ou1 == oplus;
+
+    if debug{
+        println!("");
+        println!("Oplus result > {}", oplus.len());
+        for m in &oplus {
+            println!("m = {}", m);
+        }
+        println!("Models >");
+        for m in &ou1 {
+            println!("m = {}", m);
+        }
+        println!("====> RESULT: {}", result);
+    }
+
+    return result;
+}
+
+pub fn debug_example(phi:ModalFormula, psi:ModalFormula) {
+    let atoms_phi = get_atoms_from_fromula(&phi);
+    let atoms_psi = get_atoms_from_fromula(&psi);
+    let universe_phi = generate_valuations(&atoms_phi);
+    let universe_psi = generate_valuations(&atoms_psi);
+
+    let universe_both = generate_valuations(&"pq".to_string());
+
+    let pmmodels_phi = get_phi_models(&phi, &universe_phi);
+    let pmmodels_phi_both = get_phi_models(&phi, &universe_both);
+    let f = is_subset(pmmodels_phi, pmmodels_phi_both);
+    println!("Subset = {:?}", f);
+    // let pmmodels_psi = get_phi_models(&psi, &universe_psi);
+    // let voc1 = get_atoms_from_fromula(&phi);
+    // let voc2 = get_atoms_from_fromula(&psi);
+    //
+    //
+    // println!("Restricted models");
+    // for m in &pmmodels_phi {
+    //     println!("  {}", m);
+    // }
+    //
+    // println!("Non restricted models");
+    // for m in &pmmodels_phi_both {
+    //     println!("  {}", m);
+    // }
+    //
+    //
+}

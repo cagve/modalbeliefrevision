@@ -134,7 +134,8 @@ pub fn get_pm_at_distance(pm_set: &Vec<PointedModelDistance>, distance: Lexicogr
 // Min Distance from a pointed model to a set of pointed model. Which is equal to 
 pub fn min_distance(set: &Vec<S5PointedModel>, reference: &S5PointedModel) -> Lexicographic{
     let closest_pointed = closest_pointed_model(set, reference);
-    return distance_pointed_to_pointed(&closest_pointed, reference);
+    let d = distance_pointed_to_pointed(&closest_pointed, reference);
+    return d
 }
 
 // Set of minimal pointed models 
@@ -181,7 +182,9 @@ pub fn distance_set_models_to_model(set_models: &Vec<HashSet<Valuation>>, model:
 // Given a set of world and a world, return the distance to the closest point
 pub fn distance_model_to_world(set_of_worlds: &HashSet<Valuation>, world: &str) -> usize {
     let closest_world = closest_world(set_of_worlds, world);
-    return hamming_distance(&closest_world, world);
+    let d = hamming_distance(&closest_world, world); 
+    println!("[d] {} - {} = {}", closest_world, world, d);
+    return d ;
 }
 
 fn directed_hausdorff_distance(vec1: &HashSet<Valuation>, vec2: &HashSet<Valuation>) -> usize {
@@ -241,8 +244,14 @@ pub fn distance_model_to_model(model1: &HashSet<Valuation>, model2: &HashSet<Val
             // println!("d = {:?}", d);
         }
     }else{
-        model1.iter().for_each(|ele| d = d+(distance_model_to_world(model2, ele) as f64));
-        model2.iter().for_each(|ele| d = d+(distance_model_to_world(model1, ele) as f64));
+        model1.iter().for_each(|ele| {
+            d = d+(distance_model_to_world(model2, ele) as f64);
+            println!("--------------");
+        });
+        model2.iter().for_each(|ele| {
+            d = d+(distance_model_to_world(model1, ele) as f64);
+            println!("--------------");
+        });
     }
     return d;
 }
@@ -282,6 +291,7 @@ pub fn closest_set_pointed(base: &Vec<S5PointedModel>, input: &Vec<S5PointedMode
     let r:Vec<S5PointedModel> = input.clone();
     r.clone().iter()
         .for_each(|p1| {
+            //DEBUG
             let d = min_distance(base, p1);
             if d < min_d {
                 min_d = d;

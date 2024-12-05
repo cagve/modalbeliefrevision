@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use operation::{generate_z, projection_pointed, theorem};
+use operation::{generate_z, projection_pointed, theorem, theorem_revision};
 use s5rust::{modal::*, parser::build_formula};
 use utils::{generate_models, generate_propset_from_atoms, generate_propset_from_n, generate_s5models, generate_valuations};
 
@@ -104,67 +104,70 @@ fn main() {
     //     println!("{}", i);
     // }
 
-    // let formulas1 = vec!["box(p and diamond(q)) implies diamond(p and box(q))".to_string(),
-    // "diamond(p and box(q)) implies box(p implies diamond(q))".to_string(),
-    // "box(p implies diamond(q)) and diamond(p or q)".to_string(),
-    // "diamond(p and box(q)) implies box(diamond(p) implies q)".to_string(),
-    // "box(diamond(p) implies diamond(q)) implies diamond(p implies box(q))".to_string(),
-    // "diamond(box(p) and diamond(q)) implies box(diamond(p) implies q)".to_string(),
-    // "box(p implies diamond(box(q))) and diamond(p and q)".to_string(),
-    // "diamond(box(p implies q)) implies box(diamond(p implies q))".to_string(),
-    // "box(diamond(p) and diamond(q)) implies diamond(p and q)".to_string(),
-    // "diamond(p implies box(q)) implies box(p implies diamond(q))".to_string(),
-    // ];
-    //
-    // let formulas2 = vec![
-    //     "box(r) and diamond(r)".to_string(),
-    //     "diamond(r) implies box(r)".to_string(),
-    //     "box(r) implies diamond(r)".to_string(),
-    //     "diamond(r) and box(r)".to_string(),
-    //     "diamond(r or r)".to_string(),
-    //     "box(r and diamond(r))".to_string(),
-    //     "diamond(box(r))".to_string(),
-    //     "box(diamond(r))".to_string(),
-    //     "diamond(r) or box(r)".to_string(),
-    //     "box(r) implies diamond(box(r))".to_string(),
-    // ];
 
+      let formulas: Vec<(&str, &str)> = vec![
+        ("box p and not q", "diamond r or s"),
+        ("p implies not q", "box (r or not s)"),
+        ("p or q", "diamond (r and not t)"),
+        ("not p and (q implies r)", "box s"),
+        ("p and q", "diamond not r"),
+        ("box p implies not q", "r or not s"),
+        ("p or not q", "diamond t implies s"),
+        ("not p or q", "box r and not s"),
+    ];
+
+      let formulas: Vec<(&str, &str, &str)> = vec![
+      ("box p and not q", "diamond p or q", "box r"),
+      ("p implies not q", "box p or q", "diamond r"),
+      ("p or q", "diamond p and q", "box r"),
+      ("not p and (q implies r)", "box p", "diamond r"),
+      ("p and q", "diamond not p", "box r"),
+      ("box p implies not q", "p or q", "diamond r"),
+      ("p or not q", "diamond p implies q", "box r"),
+      ("not p or q", "box p and not q", "diamond r")
+    ];
 
 
     // let f1 = "box(p and diamond(q)) implies diamond(p and box(q))".to_string();
     // let f2 = "(box r) implies (diamond r) ".to_string();
-    let f1 = "(box p) implies (diamond q)".to_string();
-    let f2 = "(box r)".to_string();
+    let f1 = "(diamond p) and (not p) ".to_string();
+    let f2 = "(diamond q) and (not q) ".to_string();
+    let f3 = "box (not p)".to_string();
     let mut phi: ModalFormula = build_formula(&f1).unwrap();
-    let mut psi: ModalFormula = build_formula(&f2).unwrap();
+    let mut psi: ModalFormula = build_formula(&f3).unwrap();
+    let mut mu: ModalFormula = build_formula(&f2).unwrap();
 
-    // let t = theorem(f1.to_string(), f2.to_string(), f2.to_string(), true);
-    // println!("RESULT = {}", t);
-    let universe1 = generate_valuations(&"pq".to_string());
-    let universe2 = generate_valuations(&"r".to_string());
-    let t = get_phi_models(&phi, &universe1);
-    let u = get_phi_models(&psi, &universe2);
-
-    for m in &t{
-        println!("{}", m);
-    }
-
-    for m in &u{
-        println!("{}", m);
-    }
-    let m = vec!["pqr".to_string()];
-    let s1_model:HashSet<Valuation> = m.into_iter().collect();
-    // let s2_model:HashSet<Valuation> = n.into_iter().collect();
-    let s1_world = "pqr".to_string();
-    // let s2_world = "qp".to_string();
-    let s1 = S5PointedModel::new(s1_model, s1_world);
-    // let s2 = S5PointedModel::new(s2_model, s2_world);
-    let v1 = vec![s1.clone()];
-    let m = projection_pointed(&s1, &"r".to_string());
-    println!("{}", m);
-    let flag = m.contained(&u);
-    println!("flag = {:?}", flag);
-    // let v2 = vec![s2];
+    let t = theorem_revision(f1.to_string(), f3.to_string(), f2.to_string(), true);
+    println!("{} X {} = {} and {} = {}", f1, f2, f1, f2, t);
+    //  for (f1, f2, f3) in formulas {
+    //     let t = theorem_revision(f1.to_string(), f2.to_string(), f3.to_string(), false);
+    //     println!("{} X {} = {} and {} = {}", f1, f2, f1, f2, t);
+    // }
+//     let universe1 = generate_valuations(&"pq".to_string());
+// r   let universe2 = generate_valuations(&"r".to_string());
+    // let t = get_phi_models(&phi, &universe1);
+    // let u = get_phi_models(&psi, &universe2);
+    //
+    // // for m in &t{
+    // //     println!("{}", m);
+    // // }
+    // //
+    // // for m in &u{
+    // //     println!("{}", m);
+    // // }
+    // let m = vec!["pqr".to_string()];
+    // let s1_model:HashSet<Valuation> = m.into_iter().collect();
+    // // let s2_model:HashSet<Valuation> = n.into_iter().collect();
+    // let s1_world = "pqr".to_string();
+    // // let s2_world = "qp".to_string();
+    // let s1 = S5PointedModel::new(s1_model, s1_world);
+    // // let s2 = S5PointedModel::new(s2_model, s2_world);
+    // // let v1 = vec![s2.clone()];
+    // let m = projection_pointed(&s1, &"r".to_string());
+    // // println!("{}", m);
+    // // let flag = m.contained(&u);
+    // // println!("flag = {:?}", flag);
+    // // let v2 = vec![s2];
 
     // let mut flag = true;
     // for f1 in &formulas1 {

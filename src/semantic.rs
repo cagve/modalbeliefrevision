@@ -33,7 +33,34 @@ impl S5PointedModel{
     }
 
     pub fn eq(&self, other: &Self) -> bool {
-        return self.world == other.world && self.model == other.model;
+        //order model 
+        let sorted_self_model:HashSet<Valuation> = self.model.iter()
+            .map(|x|{
+                let mut chars: Vec<char> = x.chars().collect();
+                chars.sort();
+                let sorted_string: String = chars.into_iter().collect(); 
+                return sorted_string;
+        })
+        .collect();
+        let sorted_other_model:HashSet<Valuation> = other.model.iter()
+            .map(|x|{
+                let mut chars: Vec<char> = x.chars().collect();
+                chars.sort();
+                let sorted_string: String = chars.into_iter().collect(); 
+                return sorted_string;
+        })
+        .collect();
+
+        let mut self_world_char:Vec<char>= self.world.chars().collect();
+        self_world_char.sort();
+        let sorted_self_world:Valuation = self_world_char.into_iter().collect();
+
+        let mut other_world_char:Vec<char>= other.world.chars().collect();
+        other_world_char.sort();
+        let sorted_other_world:Valuation = other_world_char.into_iter().collect();
+
+
+        return sorted_self_world == sorted_other_world && sorted_other_model == sorted_self_model;
     }
 
     pub fn new(model_values: HashSet<Valuation>, world: Valuation) -> Self {
@@ -47,12 +74,8 @@ impl S5PointedModel{
         .collect::<HashSet<Valuation>>();
 
         let mut chars: Vec<char> = world.chars().collect();
-        println!("__");
-        println!("pre = {:?}", chars);
         chars.sort_by(|a, b| a.to_lowercase().cmp(b.to_lowercase()));
-        println!("post = {:?}", chars);
         let world_value:Valuation = chars.into_iter().collect();
-        println!("str = {:?}", world_value);
 
         S5PointedModel {
             model:model_values,
@@ -129,8 +152,7 @@ impl S5PointedModel{
     pub fn contained(&self, set:&Vec<S5PointedModel>) -> bool{
         let mut flag = false;
         for s5model in set{
-            println!("{} = {}?", s5model, self);
-            if s5model.clone() == self.clone(){
+            if s5model.clone().eq(&self.clone()){
                 flag = true;
                 break;
             }

@@ -94,6 +94,16 @@ pub fn powerset_hash(set: &HashSet<Valuation>) -> Vec<HashSet<Valuation>> {
 }
 
 
+pub fn is_subset(vec1: Vec<S5PointedModel>, vec2: Vec<S5PointedModel>) -> bool{
+    // Convert both vectors into HashSets for efficient lookup
+
+    for item in vec1 {
+        if !vec2.contains(&item) {
+            return false;
+        }
+    }
+    return true
+}
 
 
 pub fn get_atoms_from_fromula(f: &ModalFormula) -> Valuation  {
@@ -121,6 +131,19 @@ pub fn s5veceq(vec1:&Vec<S5PointedModel>, vec2:&Vec<S5PointedModel>) -> bool{
         }
     }
     return flag1 && flag2;
+}
+
+
+pub fn intersect_strings(w: &String, p: &String) -> String {
+    // Collect the intersection of characters between two strings
+    let set_w: HashSet<char> = w.chars().collect();
+    let set_p: HashSet<char> = p.chars().collect();
+
+    // Find the intersection of characters
+    let intersection: HashSet<char> = set_w.intersection(&set_p).cloned().collect();
+
+    // Convert the intersected characters back into a string
+    intersection.into_iter().collect()
 }
 
 // pub fn get_universe_from_formula(f: &ModalFormula) -> Vec<String> {
